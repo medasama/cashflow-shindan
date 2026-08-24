@@ -1,0 +1,1868 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>手取り・税・社保診断ツール（V1.1）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Zen+Old+Mincho:wght@600;700&family=Noto+Sans+JP:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#16233F; --ink-soft:#3C4A66; --paper:#F5F6F2; --panel:#FFFFFF;
+    --line:#D9DCD3; --ledger:#E7EAE2; --accent:#B23A2E; --accent-soft:#F1DEDA;
+    --good:#2F6F5E; --warn-bg:#FBF2DE; --warn-text:#7A5B12;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:'Noto Sans JP',sans-serif;line-height:1.6;}
+  .wrap{max-width:1080px;margin:0 auto;padding:32px 20px 80px;}
+  header{margin-bottom:28px;}
+  .eyebrow{font-size:12px;letter-spacing:.18em;color:var(--accent);font-weight:700;text-transform:uppercase;margin-bottom:6px;}
+  h1{font-family:'Zen Old Mincho',serif;font-size:clamp(24px,4vw,34px);margin:0 0 8px;font-weight:700;letter-spacing:.02em;}
+  .sub{color:var(--ink-soft);font-size:14px;max-width:680px;}
+  .grid{display:grid;grid-template-columns:1.2fr 1fr;gap:22px;align-items:start;}
+  @media (max-width:900px){.grid{grid-template-columns:1fr;}}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:24px 26px;}
+  .panel + .panel{margin-top:20px;}
+  .panel-title{font-size:13px;font-weight:700;color:var(--ink-soft);letter-spacing:.06em;margin:0 0 16px;display:flex;align-items:center;gap:8px;}
+  .panel-title::before{content:'';width:14px;height:1px;background:var(--accent);display:inline-block;}
+
+  .source{border:1px solid var(--line);border-radius:4px;margin-bottom:12px;overflow:hidden;}
+  .source:last-child{margin-bottom:0;}
+  .source-head{display:flex;align-items:center;gap:10px;padding:13px 14px;background:var(--paper);cursor:pointer;user-select:none;}
+  .source-head input[type=checkbox]{width:17px;height:17px;accent-color:var(--accent);}
+  .source-head .name{font-weight:600;font-size:14px;}
+  .source-body{max-height:0;overflow:hidden;transition:max-height .25s ease;}
+  .source-body.open{max-height:260px;}
+  .source-inner{padding:14px 16px 16px;border-top:1px solid var(--line);}
+
+  .row{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:10px 0;border-bottom:1px solid var(--ledger);}
+  .row:last-child{border-bottom:none;}
+  .row label{font-size:14px;color:var(--ink);font-weight:500;flex:0 0 auto;}
+  .row .hint{display:block;font-size:11px;color:#8B8F86;font-weight:400;margin-top:3px;line-height:1.5;}
+  .field{display:flex;align-items:center;gap:6px;}
+  input[type=number],select{
+    font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:500;
+    border:1px solid var(--line);border-radius:3px;padding:7px 9px;width:110px;
+    text-align:right;background:#FCFCFA;color:var(--ink);
+  }
+  select{text-align:left;width:auto;font-family:'Noto Sans JP',sans-serif;}
+  input:focus,select:focus{outline:2px solid var(--accent);outline-offset:1px;}
+  .unit{font-size:12px;color:var(--ink-soft);}
+  .toggle{display:flex;gap:0;border:1px solid var(--line);border-radius:3px;overflow:hidden;}
+  .toggle button{border:none;background:#FCFCFA;color:var(--ink-soft);font-family:'Noto Sans JP',sans-serif;font-size:13px;padding:7px 14px;cursor:pointer;}
+  .toggle button.active{background:var(--ink);color:#fff;}
+  .note-box{margin-top:8px;font-size:11.5px;color:#8B8F86;line-height:1.6;background:var(--paper);border-radius:3px;padding:8px 10px;}
+
+  .dep-list{display:flex;flex-direction:column;gap:10px;margin-top:8px;}
+  .dep-item{display:grid;grid-template-columns:1fr 90px 1fr auto;gap:8px;align-items:center;background:var(--paper);border:1px solid var(--line);border-radius:3px;padding:8px 10px;}
+  .dep-item.simple{grid-template-columns:90px 1fr auto;}
+  .dep-item.kodomo-extra{grid-template-columns:90px 1fr 90px auto;}
+  .dep-independ{font-size:12px;}
+  .dep-item select, .dep-item input{width:100%;}
+  .dep-item .del{border:none;background:none;color:var(--accent);font-size:16px;cursor:pointer;padding:0 4px;}
+  .add-btn{margin-top:10px;font-size:13px;color:var(--accent);background:none;border:1px dashed var(--accent);border-radius:3px;padding:8px 14px;cursor:pointer;font-family:'Noto Sans JP',sans-serif;}
+  .checkline{display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--ink-soft);margin-top:14px;}
+  .cta{margin-top:22px;width:100%;padding:14px;border:none;border-radius:3px;background:var(--ink);color:#fff;font-size:15px;font-weight:700;letter-spacing:.05em;cursor:pointer;font-family:'Noto Sans JP',sans-serif;}
+  .cta:hover{background:var(--accent);}
+
+  .result-panel{position:relative;overflow:hidden;}
+  .stamp{position:absolute;top:18px;right:18px;width:64px;height:64px;border-radius:50%;border:2.5px solid var(--accent);color:var(--accent);display:flex;align-items:center;justify-content:center;font-family:'Zen Old Mincho',serif;font-size:13px;font-weight:700;letter-spacing:.1em;transform:rotate(-11deg) scale(.6);opacity:0;transition:transform .45s cubic-bezier(.2,1.4,.4,1), opacity .3s;writing-mode:vertical-rl;padding:6px 0;}
+  .stamp.show{transform:rotate(-11deg) scale(1);opacity:.9;}
+  .headline{margin-bottom:18px;}
+  .headline .label{font-size:12px;color:var(--ink-soft);letter-spacing:.05em;}
+  .headline .value{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:40px;color:var(--good);line-height:1.1;margin-top:4px;}
+  .headline .value span{font-size:16px;font-weight:500;margin-left:4px;color:var(--ink-soft);}
+  .breakdown{display:flex;flex-direction:column;}
+  .breakdown .brow{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--ledger);font-size:13px;}
+  .breakdown .brow:last-child{border-bottom:none;}
+  .breakdown .bval{font-family:'JetBrains Mono',monospace;font-weight:600;}
+  .brow.clickable{cursor:pointer;user-select:none;}
+  .brow.clickable .bkey{display:flex;align-items:center;gap:5px;}
+  .brow.clickable .chevron{font-size:10px;color:var(--ink-soft);transition:transform .2s;display:inline-block;}
+  .brow.clickable.open .chevron{transform:rotate(90deg);}
+  .sub-breakdown{max-height:0;overflow:hidden;transition:max-height .25s ease;}
+  .sub-breakdown.open{max-height:220px;}
+  .sub-breakdown .srow{display:flex;justify-content:space-between;padding:6px 0 6px 16px;font-size:12px;color:var(--ink-soft);border-bottom:1px dashed var(--ledger);}
+  .sub-breakdown .srow .sval{font-family:'JetBrains Mono',monospace;}
+  .warn{margin-top:16px;background:var(--warn-bg);color:var(--warn-text);border-radius:3px;padding:12px 14px;font-size:12.5px;line-height:1.6;}
+  .note{margin-top:18px;font-size:11.5px;color:#8B8F86;line-height:1.7;}
+  .placeholder{color:#9CA098;font-size:13px;padding:30px 0;text-align:center;}
+
+  .section-divider{margin:44px 0 24px;padding-top:32px;border-top:1px solid var(--line);}
+  .section-divider .eyebrow{margin-bottom:6px;}
+  .section-divider h2{font-family:'Zen Old Mincho',serif;font-size:22px;margin:0 0 6px;font-weight:700;}
+  .section-divider .sub{margin:0;}
+
+  input.preset{color:#9CA098;}
+  input.preset:focus{color:var(--ink);}
+  input.edited{color:var(--ink);}
+  .preset-tag{font-size:10px;color:#9CA098;margin-left:6px;}
+
+  .subtotal-panel{background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:20px 24px;margin-top:20px;}
+  .subtotal-row{display:flex;justify-content:space-between;align-items:baseline;}
+  .subtotal-row .label{font-size:13px;color:var(--ink-soft);}
+  .subtotal-row .value{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:28px;color:var(--ink);}
+  .subtotal-row .value span{font-size:14px;font-weight:500;color:var(--ink-soft);margin-left:4px;}
+  .subtotal-note{font-size:11.5px;color:#8B8F86;margin-top:6px;line-height:1.6;}
+
+  .le-table{width:100%;border-collapse:collapse;font-size:12px;white-space:nowrap;}
+  .le-table th,.le-table td{border:1px solid var(--line);padding:6px 8px;text-align:center;}
+  .le-table th{background:var(--panel);color:var(--ink-soft);font-weight:700;font-size:11px;}
+  .le-table td.le-event{text-align:left;font-size:11.5px;color:var(--accent);white-space:normal;}
+  .le-table td.le-amount{font-family:'JetBrains Mono',monospace;white-space:normal;}
+  .le-zone-mid{background:#FAF7F0;}
+  .le-zone-long{background:#F2F0EC;color:#9CA098;}
+  .le-year-cell{font-weight:700;}
+  .ce-item{display:grid;grid-template-columns:110px 1fr 110px auto;gap:8px;align-items:center;background:var(--paper);border:1px solid var(--line);border-radius:3px;padding:8px 10px;margin-bottom:8px;}
+  .re-item{display:grid;grid-template-columns:90px 70px 1fr 100px auto;gap:8px;align-items:center;background:var(--paper);border:1px solid var(--line);border-radius:3px;padding:8px 10px;margin-bottom:8px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">V1.1 &mdash; 収支確認表</div>
+    <h1>手取り・税・社保診断ツール</h1>
+    <p class="sub">額面年収・事業所得・年金など、お手元の書類の数字を転記いただくだけで、社会保険料・所得税・住民税・手取りを概算します。予測ではなく、早めに気づくための診断ツールです。</p>
+  </header>
+
+  <div class="panel" id="clientPanel">
+    <p class="panel-title">顧客データの保存・読み込み</p>
+    <div class="row">
+      <label>顧客名<span class="hint">ファイル名に使われます</span></label>
+      <div class="field"><input type="text" id="clientName" placeholder="例：田中様" value=""></div>
+    </div>
+    <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:4px;">
+      <button type="button" class="add-btn" id="saveClientBtn">💾 保存（ファイルをダウンロード）</button>
+      <button type="button" class="add-btn" id="loadClientBtn">📂 保存済みファイルを読み込む</button>
+      <input type="file" id="loadClientFile" accept="application/json" style="display:none;">
+    </div>
+    <div class="subtotal-note" id="clientStatus" style="margin-top:8px;"></div>
+    <div class="note-box">※このツールは入力内容を自動送信しません。保存すると、今の入力内容がすべて1つのファイルとしてダウンロードされます。顧客ごとにファイルを分けて保管してください。ブラウザを閉じる前の保存を忘れないようご注意ください（自動的な下書き保存は行いますが、あくまで事故防止用の補助です）。</div>
+  </div>
+
+  <div class="grid">
+    <div>
+      <div class="panel">
+        <p class="panel-title">基本情報（本人）</p>
+        <div class="row">
+          <label>年齢</label>
+          <div class="field"><input type="number" id="age" value="40" min="15" max="99"><span class="unit">歳</span></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <p class="panel-title">本人の収入源（該当するものにチェック）</p>
+
+        <div class="source">
+          <div class="source-head" data-target="src-kyuyo">
+            <input type="checkbox" id="has-kyuyo" checked>
+            <span class="name">給与所得</span>
+          </div>
+          <div class="source-body open" id="src-kyuyo">
+            <div class="source-inner">
+              <div class="row">
+                <label>額面年収<span class="hint">源泉徴収票の「支払金額」欄。2ヶ所以上お勤めの場合は合計額</span></label>
+                <div class="field"><input type="number" id="nenshu" value="500" min="0"><span class="unit">万円</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="source">
+          <div class="source-head" data-target="src-jigyo">
+            <input type="checkbox" id="has-jigyo">
+            <span class="name">事業所得</span>
+          </div>
+          <div class="source-body" id="src-jigyo">
+            <div class="source-inner">
+              <div class="row">
+                <label>所得金額<span class="hint">確定申告書第一表「所得金額等」の「事業」欄（経費差引後・控除前の金額）</span></label>
+                <div class="field"><input type="number" id="jigyoShotoku" value="0" min="0"><span class="unit">万円</span></div>
+              </div>
+              <div class="note-box">※ここでの手取りは「所得金額」を基にした税務上の目安です。減価償却費や売掛金の状況により、実際に使える現金とはズレる場合があります。専従者給与がある場合は要調整（本ツール未対応）。</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="source">
+          <div class="source-head" data-target="src-zassho">
+            <input type="checkbox" id="has-zassho">
+            <span class="name">雑所得（業務・副業など）</span>
+          </div>
+          <div class="source-body" id="src-zassho">
+            <div class="source-inner">
+              <div class="row">
+                <label>所得金額<span class="hint">確定申告書第一表「所得金額等」の「雑：業務」欄（経費差引後・控除前の金額）</span></label>
+                <div class="field"><input type="number" id="zasshoShotoku" value="0" min="0"><span class="unit">万円</span></div>
+              </div>
+              <div class="note-box">※事業所得と同様の扱いですが、赤字が出た場合に他の所得と相殺（損益通算）できない点が異なります（本ツールは黒字前提のため計算への影響はありません）。</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="source">
+          <div class="source-head" data-target="src-nenkin">
+            <input type="checkbox" id="has-nenkin">
+            <span class="name">年金</span>
+          </div>
+          <div class="source-body" id="src-nenkin">
+            <div class="source-inner">
+              <div class="row">
+                <label>年間見込額<span class="hint">年金振込通知書・年金額改定通知書の「年金支払額」欄（控除前の金額）</span></label>
+                <div class="field"><input type="number" id="nenkinGaku" value="0" min="0"><span class="unit">万円</span></div>
+              </div>
+              <div class="note-box">※年金振込通知書に「控除後振込額」の記載があれば、それが手取りそのものです。お持ちであれば計算より先にそちらをご確認ください。</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <p class="panel-title">本人の社会保険</p>
+        <div class="row">
+          <label>社会保険の種類</label>
+          <div class="toggle" id="shahokenToggle">
+            <button type="button" data-v="shakaihoken" class="active">社保</button>
+            <button type="button" data-v="kokuho">国保</button>
+            <button type="button" data-v="sonota">その他</button>
+          </div>
+        </div>
+        <div id="sonotaRows" style="display:none;">
+          <div class="row">
+            <label>標準報酬月額<span class="hint">特例退職・任意継続の通知書に記載の金額（初期値はパナソニック健保モデル）</span></label>
+            <div class="field"><input type="number" id="sonotaGetsugaku" value="28" min="0"><span class="unit">万円</span></div>
+          </div>
+          <div class="row">
+            <label>健康保険料率<span class="hint">通知書の料率（組合により異なる。目安10.0%）</span></label>
+            <div class="field"><input type="number" id="sonotaRitsu" value="10.0" min="0" step="0.01"><span class="unit">%</span></div>
+          </div>
+        </div>
+        <div class="checkline">
+          <input type="checkbox" id="otherIncome" style="margin-top:3px;">
+          <label for="otherIncome">不動産・配当・譲渡などの他の所得がある（この診断には含まれません）</label>
+        </div>
+      </div>
+
+      <div class="panel">
+        <p class="panel-title">配偶者</p>
+        <div class="row">
+          <label>配偶者</label>
+          <div class="toggle" id="haigushaToggle">
+            <button type="button" data-v="none" class="active">なし</button>
+            <button type="button" data-v="yes">あり</button>
+          </div>
+        </div>
+        <div class="row" id="haigushaNenshuRow" style="display:none;">
+          <label>配偶者の年収</label>
+          <div class="field"><input type="number" id="haigushaNenshu" value="0" min="0"><span class="unit">万円</span></div>
+        </div>
+        <div class="row" id="haigushaAgeRow" style="display:none;">
+          <label>配偶者の年齢<span class="hint">ライフイベント表で使用</span></label>
+          <div class="field"><input type="number" id="haigushaAge" value="40" min="15" max="99"><span class="unit">歳</span></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <p class="panel-title">子・扶養家族</p>
+        <div class="row">
+          <label>子</label>
+          <div class="toggle" id="kodomoToggle">
+            <button type="button" data-v="none" class="active">なし</button>
+            <button type="button" data-v="yes">あり</button>
+          </div>
+        </div>
+        <div id="kodomoSection" style="display:none;">
+          <p style="font-size:11px;color:var(--ink-soft);margin:0 0 8px;">年齢／同居・別居／独立予定年齢（初期値18歳。この年齢に達すると、キャッシュフロー表の世帯人数から外れます。実家に残る場合は数字を大きく変更してください）</p>
+          <div class="dep-list" id="kodomoList"></div>
+          <button type="button" class="add-btn" id="addKodomo">＋ 子を追加</button>
+        </div>
+
+        <div class="row" style="margin-top:16px;">
+          <label>その他の扶養家族<span class="hint">親などが扶養に入っている場合</span></label>
+          <div class="toggle" id="oyaToggle">
+            <button type="button" data-v="none" class="active">なし</button>
+            <button type="button" data-v="yes">あり</button>
+          </div>
+        </div>
+        <div id="oyaSection" style="display:none;">
+          <div class="dep-list" id="oyaList"></div>
+          <button type="button" class="add-btn" id="addOya">＋ 扶養家族を追加</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <p class="panel-title">その他控除</p>
+        <div class="row">
+          <label>iDeCo年間拠出額<span class="hint">任意</span></label>
+          <div class="field"><input type="number" id="ideco" value="0" min="0"><span class="unit">万円</span></div>
+        </div>
+      </div>
+
+      <button class="cta" id="calcBtn">診断する</button>
+    </div>
+
+    <div class="panel result-panel">
+      <div class="stamp" id="stamp">診断済</div>
+      <p class="panel-title">診断結果</p>
+      <div id="resultBody">
+        <p class="placeholder">左の項目を入力して「診断する」を押してください</p>
+      </div>
+    </div>
+  </div>
+
+  <p class="note">
+    本ツールの税額・社会保険料は概算です。実際の金額は控除の適用状況や自治体・加入保険組合により異なります。正式な金額は源泉徴収票・住民税決定通知書・国民健康保険料決定通知書等でご確認ください。国民健康保険料は芦屋市の令和7年度料率を基にした概算で、令和8年度は「子ども・子育て支援納付金分」の新設により変動する見込みです。芦屋市以外の方には目安精度が落ちます。／副業（給与以外）・不動産・配当・譲渡所得は本診断の対象外です。
+  </p>
+
+  <div class="section-divider">
+    <div class="eyebrow">支出確認 &mdash; グループA</div>
+    <h2>正確にわかる支出を確認する</h2>
+    <p class="sub">ローン返済額・保険料など、お手元の書類（返済予定表・保険証券）から転記いただく項目です。一部の保険料は家計調査の平均値を初期値として入れていますので、証券をお持ちであれば書き換えてください。</p>
+  </div>
+
+  <div class="grid">
+    <div>
+      <div class="panel">
+        <p class="panel-title">住居</p>
+        <div class="row">
+          <label>住まいの形態</label>
+          <div class="toggle" id="jukyoToggle">
+            <button type="button" data-v="chintai" class="active">賃貸</button>
+            <button type="button" data-v="loan">持家（ローン中）</button>
+            <button type="button" data-v="kanzai">持家（完済）</button>
+          </div>
+        </div>
+        <div class="row" id="yachinRow">
+          <label>家賃<span class="hint">管理費・共益費込みでも構いません</span></label>
+          <div class="field"><input type="number" id="yachin" value="0" min="0"><span class="unit">万円/月</span></div>
+        </div>
+        <div class="row" id="loanRow" style="display:none;">
+          <label>住宅ローン返済額<span class="hint">返済予定表の月額（ボーナス払いがあれば月割りして加算）</span></label>
+          <div class="field"><input type="number" id="jutakuLoan" value="0" min="0"><span class="unit">万円/月</span></div>
+        </div>
+        <div class="row">
+          <label>火災・地震保険料<span class="hint">統計の平均額を先に入れています。証券があれば書き換えてください</span></label>
+          <div class="field"><input type="number" id="kasaiHoken" class="preset" value="861" min="0"><span class="unit">円/月</span></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <p class="panel-title">車両費</p>
+        <div class="row">
+          <label>車の所有</label>
+          <div class="toggle" id="carToggle">
+            <button type="button" data-v="nashi" class="active">持っていない</button>
+            <button type="button" data-v="ari">持っている</button>
+          </div>
+        </div>
+        <div id="carRows" style="display:none;">
+          <div class="row">
+            <label>自動車ローン返済額<span class="hint">なければ0</span></label>
+            <div class="field"><input type="number" id="carLoan" value="0" min="0"><span class="unit">万円/月</span></div>
+          </div>
+          <div class="row">
+            <label>自動車税・車検（月割り）<span class="hint">車検費用÷24ヶ月＋自動車税÷12ヶ月の目安</span></label>
+            <div class="field"><input type="number" id="carTax" value="0" min="0"><span class="unit">万円/月</span></div>
+          </div>
+          <div class="row">
+            <label>自動車保険料<span class="hint">統計の平均額（自賠責＋任意）を先に入れています</span></label>
+            <div class="field"><input type="number" id="carHoken" class="preset" value="4308" min="0"><span class="unit">円/月</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <p class="panel-title">保険</p>
+        <div class="row">
+          <label>生命保険・個人年金保険料<span class="hint">保険証券の月額保険料の合計（初期値なし）</span></label>
+          <div class="field"><input type="number" id="seimeiHoken" value="0" min="0"><span class="unit">万円/月</span></div>
+        </div>
+        <div class="row">
+          <label>医療保険料<span class="hint">統計の平均額を先に入れています。証券があれば書き換えてください</span></label>
+          <div class="field"><input type="number" id="iryoHoken" class="preset" value="1831" min="0"><span class="unit">円/月</span></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <p class="panel-title">教育（授業料）</p>
+        <div id="jugyoryoList"><p class="placeholder" id="jugyoryoPlaceholder">扶養家族に6歳以上のお子さまを登録すると、ここに授業料の入力欄が表示されます</p></div>
+        <div class="note-box">※塾・習い事の費用はここでは聞きません（下の「目安の金額」で概算します）。ここは学校の授業料のみが対象です。</div>
+      </div>
+
+      <button class="cta" id="calcGroupABtn">グループAを集計する</button>
+    </div>
+
+    <div class="panel subtotal-panel">
+      <p class="panel-title">グループA 小計</p>
+      <div id="groupAResult">
+        <p class="placeholder">左の項目を入力して「グループAを集計する」を押してください</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-divider">
+    <div class="eyebrow">支出確認 &mdash; グループB</div>
+    <h2>目安の金額から調整する</h2>
+    <p class="sub">総務省家計調査（世帯人員・年収階級別）から、世帯構成に近い平均値を自動計算して初期値として表示します。ご自身の感覚と違う項目だけ書き換えてください。世帯人員・年収は上の「収入源」「基本情報」「扶養家族」の入力内容から自動判定します。</p>
+  </div>
+
+  <div class="grid">
+    <div>
+      <div class="panel">
+        <p class="panel-title">生活費（目安の金額）</p>
+        <div id="groupBRows"></div>
+        <button class="cta" id="calcGroupBBtn" style="margin-top:16px;">目安の金額を入れる</button>
+      </div>
+    </div>
+    <div class="panel subtotal-panel">
+      <p class="panel-title">グループB 小計</p>
+      <div id="groupBResult">
+        <p class="placeholder">左の「目安の金額を入れる」を押してください</p>
+      </div>
+      <div class="subtotal-note" id="groupBBasis"></div>
+    </div>
+  </div>
+
+  <div class="section-divider">
+    <div class="eyebrow">バランスシート</div>
+    <h2>資産・負債を確認する</h2>
+    <p class="sub">今この時点での資産と負債を書き出します。通帳・証券アプリ・ローン返済予定表など、お手元でわかる範囲で構いません。わからない項目は空欄のままで進められます。</p>
+  </div>
+
+  <div class="grid">
+    <div>
+      <div class="panel">
+        <p class="panel-title">資産</p>
+        <div class="row"><label>現金</label><div class="field"><input type="number" id="bsGenkin" value="0" min="0"><span class="unit">万円</span></div></div>
+        <div class="row"><label>普通預金など<span class="hint">銀行アプリの残高表示</span></label><div class="field"><input type="number" id="bsFutsu" value="0" min="0"><span class="unit">万円</span></div></div>
+        <div class="row"><label>定期性預金</label><div class="field"><input type="number" id="bsTeiki" value="0" min="0"><span class="unit">万円</span></div></div>
+        <div class="row"><label>貯蓄型の保険<span class="hint">保険証券の「解約返戻金早見表」の現在額</span></label><div class="field"><input type="number" id="bsChochikuHoken" value="0" min="0"><span class="unit">万円</span></div></div>
+        <div class="row"><label>株式<span class="hint">証券アプリの評価額</span></label><div class="field"><input type="number" id="bsKabu" value="0" min="0"><span class="unit">万円</span></div></div>
+        <div class="row"><label>債券</label><div class="field"><input type="number" id="bsSaiken" value="0" min="0"><span class="unit">万円</span></div></div>
+        <div class="row"><label>投資信託<span class="hint">証券アプリの評価額</span></label><div class="field"><input type="number" id="bsToshin" value="0" min="0"><span class="unit">万円</span></div></div>
+        <div class="row"><label>その他の投資商品</label><div class="field"><input type="number" id="bsSonotaToshi" value="0" min="0"><span class="unit">万円</span></div></div>
+
+        <div class="row">
+          <label>住宅の時価<span class="hint">任意項目。わからなければ空欄で構いません</span></label>
+          <div class="field"><input type="number" id="bsJutaku" class="preset" value="0" min="0"><span class="unit">万円</span></div>
+        </div>
+        <div class="row">
+          <label>（参考）固定資産税評価額<span class="hint">納税通知書の金額。入力すると時価の目安を自動計算します（評価額×1.4）</span></label>
+          <div class="field"><input type="number" id="bsHyoka" value="0" min="0"><span class="unit">万円</span></div>
+        </div>
+        <div class="note-box">※上記の目安は概算です。より正確な数字が必要な場合は、SUUMOやHOME'Sなどの無料AI査定もご案内できます。</div>
+
+        <div class="row"><label>その他</label><div class="field"><input type="number" id="bsSonota" value="0" min="0"><span class="unit">万円</span></div></div>
+      </div>
+
+      <div class="panel">
+        <p class="panel-title">負債</p>
+        <div class="row"><label>住宅ローン残高<span class="hint">返済予定表の「残高」欄</span></label><div class="field"><input type="number" id="bsJutakuLoan" value="0" min="0"><span class="unit">万円</span></div></div>
+        <div class="row"><label>自動車ローン残高</label><div class="field"><input type="number" id="bsCarLoan" value="0" min="0"><span class="unit">万円</span></div></div>
+        <div class="row"><label>カードローン残高<span class="hint">各社アプリのマイページ</span></label><div class="field"><input type="number" id="bsCardLoan" value="0" min="0"><span class="unit">万円</span></div></div>
+        <div class="row"><label>奨学金残高<span class="hint">日本学生支援機構「スカラネット・パーソナル」</span></label><div class="field"><input type="number" id="bsShogaku" value="0" min="0"><span class="unit">万円</span></div></div>
+        <div class="row"><label>その他</label><div class="field"><input type="number" id="bsFusaiSonota" value="0" min="0"><span class="unit">万円</span></div></div>
+      </div>
+
+      <button class="cta" id="calcBSBtn">バランスシートを集計する</button>
+    </div>
+
+    <div class="panel subtotal-panel">
+      <p class="panel-title">純資産</p>
+      <div id="bsResult">
+        <p class="placeholder">左の項目を入力して「バランスシートを集計する」を押してください</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-divider">
+    <div class="eyebrow">ライフプラン表</div>
+    <h2>今後30年の家族の年齢と将来の見通しを確認する</h2>
+    <p class="sub">本人・配偶者・お子さまの年齢から、入学や七五三などの節目を自動で表示します。短期（〜5年）は具体的な金額、中期（6〜15年）は公立/私立のレンジ、長期（16〜30年）は金額を出さず注意信号のみ表示します。退職・年金・その他の将来の予定は、わかる範囲で任意入力してください。空欄のままなら、その項目は「現状が続く」前提で表示されます。</p>
+  </div>
+
+  <div class="panel">
+    <p class="panel-title">定期的な収支（任意）</p>
+    <div class="row">
+      <label>本人の年金開始年齢</label>
+      <div class="field"><input type="number" id="taishokuAge" value="65" min="0" max="99"><span class="unit">歳</span></div>
+    </div>
+    <div class="row">
+      <label>本人の年金見込額（年額）<span class="hint">ねんきん定期便の見込額。開始年齢から毎年計上し続けます</span></label>
+      <div class="field"><input type="number" id="nenkinMitoshiMan" value="0" min="0"><span class="unit">万円/年</span></div>
+    </div>
+    <div class="row" id="haigushaNenkinRow" style="display:none;">
+      <label>配偶者の年金開始年齢</label>
+      <div class="field"><input type="number" id="haigushaNenkinAge" value="65" min="0" max="99"><span class="unit">歳</span></div>
+    </div>
+    <div class="row" id="haigushaNenkinGakuRow" style="display:none;">
+      <label>配偶者の年金見込額（年額）</label>
+      <div class="field"><input type="number" id="haigushaNenkinMan" value="0" min="0"><span class="unit">万円/年</span></div>
+    </div>
+    <div class="note-box">※50歳未満の方は、ねんきん定期便に将来の見込額がまだ記載されていないことが多いため、無理に埋めず空欄のままで構いません。</div>
+
+    <div id="recurringEventList" style="margin-top:14px;"></div>
+    <button type="button" class="add-btn" id="addRecurringEvent">＋ その他の定期的な項目を追加（再雇用の収入・介護費用など）</button>
+  </div>
+
+  <div class="panel">
+    <p class="panel-title">一時的な収支（任意）</p>
+    <div class="row">
+      <label>本人の退職予定年齢<span class="hint">わからなければ65歳のまま進めて構いません</span></label>
+      <div class="field"><input type="number" id="taishokuAge2" value="65" min="0" max="99"><span class="unit">歳</span></div>
+    </div>
+    <div class="row">
+      <label>本人の退職金見込額<span class="hint">任意。退職予定年に一括で計上します</span></label>
+      <div class="field"><input type="number" id="taishokukinMan" value="0" min="0"><span class="unit">万円</span></div>
+    </div>
+    <div class="row" id="haigushaTaishokuAgeRow" style="display:none;">
+      <label>配偶者の退職予定年齢</label>
+      <div class="field"><input type="number" id="haigushaTaishokuAge" value="65" min="0" max="99"><span class="unit">歳</span></div>
+    </div>
+    <div class="row" id="haigushaTaishokukinRow" style="display:none;">
+      <label>配偶者の退職金見込額</label>
+      <div class="field"><input type="number" id="haigushaTaishokukinMan" value="0" min="0"><span class="unit">万円</span></div>
+    </div>
+    <div class="row">
+      <label>住宅ローン完済予定年齢（本人）<span class="hint">返済予定表の「完済予定日」欄。金利を考慮した自動計算は行わないため、わかる範囲での正確入力にしています</span></label>
+      <div class="field"><input type="number" id="loanPayoffAge" value="" placeholder="不明なら空欄" min="0" max="99"><span class="unit">歳</span></div>
+    </div>
+
+    <div id="customEventList" style="margin-top:14px;"></div>
+    <button type="button" class="add-btn" id="addCustomEvent">＋ その他の一時的な項目を追加（結婚・車の買い替え・満期保険金・介護の初期費用など）</button>
+    <button class="cta" id="calcLifeEventBtn" style="margin-top:16px;">ライフプラン表を作成する</button>
+  </div>
+
+  <div class="panel" id="lifeEventPanel" style="overflow-x:auto;">
+    <p class="panel-title">ライフプラン表（今後30年）</p>
+    <div id="lifeEventResult">
+      <p class="placeholder">上の「ライフイベント表を作成する」を押してください</p>
+    </div>
+  </div>
+
+  <div class="section-divider">
+    <div class="eyebrow">キャッシュフロー表</div>
+    <h2>収支確認表・グループA/B・バランスシート・ライフプランを統合する</h2>
+    <p class="sub">ここまでに入力した内容をすべて読み取り、今後30年間の年間収支と貯蓄残高の推移を1つの表にまとめます。先に「診断する」「グループAを集計する」「目安の金額を入れる」「バランスシートを集計する」「ライフプラン表を作成する」を一通り実行しておいてください。</p>
+  </div>
+
+  <div class="panel">
+    <button class="cta" id="calcCashflowBtn">キャッシュフロー表を作成する</button>
+    <div class="note-box" style="margin-top:12px;">
+      主な前提：昇給・物価上昇は見込まず「今の金額が横ばいで続く」前提で計算します（早期警戒ツールとしての方針）。退職予定年齢を過ぎると給与収入をゼロにし、年金開始年齢から年金の手取りを計上します。住宅ローンは完済予定年齢を過ぎると返済額を支出から除きます。お子さまは独立予定年齢を過ぎるとグループBの世帯人数から外れます（年収五分位は初年度の水準で固定）。生命保険料・学校授業料・iDeCoなど、正確入力のグループA項目は初年度の金額のまま横ばいで続く前提です。配偶者は、年金開始前は給与所得者として税・社会保険料を差し引いた手取りで計算します。
+    </div>
+  </div>
+
+  <div class="panel" id="cashflowPanel" style="overflow-x:auto;">
+    <p class="panel-title">キャッシュフロー表（今後30年）</p>
+    <div id="cashflowResult">
+      <p class="placeholder">上の「キャッシュフロー表を作成する」を押してください</p>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== パラメータ =====
+const PARAMS = {
+  給与所得控除: [
+    { 収入上限: 2200000, 控除額: 740000 },
+    { 収入下限: 2200001, 収入上限: 3600000, 計算式: (n)=> n*0.30+80000 },
+    { 収入下限: 3600001, 収入上限: 6600000, 計算式: (n)=> n*0.20+440000 },
+    { 収入下限: 6600001, 収入上限: 8500000, 計算式: (n)=> n*0.10+1100000 },
+    { 収入下限: 8500001, 控除額: 1950000 },
+  ],
+  基礎控除: [
+    { 上限: 4890000, 額: 1040000 },
+    { 下限: 4890001, 上限: 6550000, 額: 670000 },
+    { 下限: 6550001, 上限: 23500000, 額: 620000 },
+    { 下限: 23500001, 額: 0 },
+  ],
+  配偶者控除: {
+    所得要件: 620000, 一般: 380000,
+    特別控除表: [
+      { 下限: 620001, 上限: 950000, c900: 380000, c950: 260000, c1000: 130000 },
+      { 下限: 950001, 上限: 1000000, c900: 360000, c950: 240000, c1000: 120000 },
+      { 下限: 1000001, 上限: 1050000, c900: 310000, c950: 210000, c1000: 110000 },
+      { 下限: 1050001, 上限: 1100000, c900: 260000, c950: 180000, c1000: 90000 },
+      { 下限: 1100001, 上限: 1150000, c900: 210000, c950: 140000, c1000: 70000 },
+      { 下限: 1150001, 上限: 1200000, c900: 160000, c950: 110000, c1000: 60000 },
+      { 下限: 1200001, 上限: 1250000, c900: 110000, c950: 80000, c1000: 40000 },
+      { 下限: 1250001, 上限: 1300000, c900: 60000, c950: 40000, c1000: 20000 },
+      { 下限: 1300001, 上限: 1330000, c900: 30000, c950: 20000, c1000: 10000 },
+    ]
+  },
+  扶養控除: { c0_15:0, c16_18:380000, c19_22:630000, c23plus:380000, oya70doukyo:580000, oya70betsu:480000 },
+  所得税速算表: [
+    { 上限: 1949000, 税率:0.05, 控除:0 },
+    { 下限: 1950000, 上限: 3299000, 税率:0.10, 控除:97500 },
+    { 下限: 3300000, 上限: 6949000, 税率:0.20, 控除:427500 },
+    { 下限: 6950000, 上限: 8999000, 税率:0.23, 控除:636000 },
+    { 下限: 9000000, 上限: 17999000, 税率:0.33, 控除:1536000 },
+    { 下限: 18000000, 上限: 39999000, 税率:0.40, 控除:2796000 },
+    { 下限: 40000000, 税率:0.45, 控除:4796000 },
+  ],
+  復興税率: 0.021,
+  住民税: {
+    税率: 0.10, 均等割: 5000, 基礎控除: 430000,
+    扶養控除: { c0_15:0, c16_18:330000, c19_22:450000, c23plus:330000, oya70doukyo:450000, oya70betsu:380000 },
+    配偶者控除: { 一般: 330000 },
+  },
+  社保: { kenkou:0.0990, kaigo:0.0162, kousei:0.183, koyou:0.0050 },
+  年金控除: {
+    "65+": [
+      { 収入上限: 3300000, 控除額: 1100000 },
+      { 収入下限: 3300001, 収入上限: 4100000, 計算式: (n)=> n*0.25+275000 },
+      { 収入下限: 4100001, 収入上限: 7700000, 計算式: (n)=> n*0.15+685000 },
+      { 収入下限: 7700001, 収入上限: 10000000, 計算式: (n)=> n*0.05+1455000 },
+      { 収入下限: 10000001, 控除額: 1755000 },
+    ],
+    "65-": [
+      { 収入上限: 1300000, 控除額: 600000 },
+      { 収入下限: 1300001, 収入上限: 4100000, 計算式: (n)=> n*0.25+275000 },
+      { 収入下限: 4100001, 収入上限: 7700000, 計算式: (n)=> n*0.15+685000 },
+      { 収入下限: 7700001, 収入上限: 10000000, 計算式: (n)=> n*0.05+1455000 },
+      { 収入下限: 10000001, 控除額: 1755000 },
+    ]
+  },
+  国保_芦屋市: {
+    医療: { 率:0.077, 均等:33480, 平等:20460, 上限:660000 },
+    支援: { 率:0.031, 均等:11520, 平等:7680, 上限:260000 },
+    介護: { 率:0.029, 均等:12960, 平等:5880, 上限:170000 },
+  },
+  国民年金_年額: 215040,
+  その他社保_介護保険料率目安: 0.0162,
+};
+
+// ===== 統計パラメータ（出典の異なる統計値をここに集約。年次更新時はこのブロックだけ編集すればよい） =====
+const PARAMS_TOUKEI = {
+  グループB: {
+    '食材費（自炊）': { base:74136, house:[31970,65827,72510,79636,86913,98712], income:[62710,68431,73206,78651,87681] },
+    '外食費':        { base:18681, house:[13817,15688,17766,21843,21876,20958], income:[9849,14066,17331,21210,30949] },
+    '住居（修繕・維持）': { base:7837,  house:[1404,9689,6637,8168,4472,6022],   income:[3789,5826,7832,8948,12790] },
+    '光熱・水道':     { base:24182, house:[11222,21715,24484,25270,26802,33265], income:[22685,23439,24041,24528,26215] },
+    '家具・家事用品':   { base:13850, house:[5851,12307,13997,14729,16189,13531], income:[10287,11845,13880,15111,18125] },
+    '被服及び履物':    { base:11965, house:[5972,9220,11563,14306,14995,15219],  income:[6569,9111,11110,13866,19171] },
+    '保健医療':      { base:14574, house:[8433,14866,15070,14304,12915,13433], income:[11051,11923,14027,15715,20156] },
+    '交通':        { base:7261,  house:[6561,7132,7670,7708,5460,3999],     income:[3183,4124,5879,9371,13750] },
+    '通信':        { base:12907, house:[6943,11325,13179,13662,14271,17953], income:[11353,12203,12595,13564,14818] },
+    '塾・習い事費':    { base:4083,  house:[0,236,2394,8309,9215,7876],      income:[947,1610,3750,4336,9774] },
+    '教養娯楽':      { base:34058, house:[24187,32128,31481,37823,36544,38401], income:[21151,26526,31587,37080,53945] },
+    '諸雑費':       { base:26642, house:[15083,25874,27286,27315,24999,25909], income:[17565,21174,24913,29572,39984] },
+    'こづかい':      { base:6744,  house:[0,6288,6812,7310,6485,5920],     income:[4012,6098,7749,7582,8277] },
+    '交際費':       { base:14944, house:[15248,21408,14260,10516,8934,11085],  income:[10449,12126,13877,16231,22035] },
+    '仕送り金':      { base:566,   house:[206,669,711,391,360,47],           income:[1362,544,539,331,55] },
+  },
+  年収五分位境界_万円月額: [43, 54, 66, 91],
+  年収五分位ラベル: ['Ⅰ（下位20%）','Ⅱ','Ⅲ（中位）','Ⅳ','Ⅴ（上位20%）'],
+  保険プリセット_円月額: { 火災地震保険料: 861, 自動車保険料: 4308, 医療保険料: 1831 },
+  ライフプランイベント: [
+    { ages:[3,5,7], who:'kodomo', label:'七五三', amountPublic:7, amountPrivate:7 },
+    { ages:[6],     who:'kodomo', label:'小学校入学', amountPublic:3.5,  amountPrivate:50.7 },
+    { ages:[12],    who:'kodomo', label:'中学校入学', amountPublic:7.2,  amountPrivate:58.8 },
+    { ages:[15],    who:'kodomo', label:'高校入学',   amountPublic:11.9, amountPrivate:24.2 },
+    { ages:[18],    who:'kodomo', label:'大学入学',   amountPublic:null, amountPrivate:null },
+  ],
+  後期高齢者医療_全国目安: { 均等割:48000, 所得割率:0.0934, 上限:800000 },
+};
+
+document.getElementById('kasaiHoken').value = PARAMS_TOUKEI.保険プリセット_円月額.火災地震保険料;
+document.getElementById('carHoken').value   = PARAMS_TOUKEI.保険プリセット_円月額.自動車保険料;
+document.getElementById('iryoHoken').value  = PARAMS_TOUKEI.保険プリセット_円月額.医療保険料;
+
+// ===== 計算ロジック =====
+const manToEn = m => Math.round(m*10000);
+const enToMan = e => Math.round(e/1000)/10;
+const chopSen = e => Math.floor(e/1000)*1000;
+
+function calcShakaiHoken(nenshuMan, age){
+  const en = manToEn(nenshuMan);
+  const s = PARAMS.社保;
+  const kenkou = en*s.kenkou*0.5;
+  const kaigo = (age>=40&&age<65)? en*s.kaigo*0.5 : 0;
+  const kousei = en*s.kousei*0.5;
+  const koyou = en*s.koyou;
+  return {kenkou,kaigo,kousei,koyou,合計:kenkou+kaigo+kousei+koyou};
+}
+function calcKyuyoKoujo(en){
+  for(const row of PARAMS.給与所得控除){
+    const joge = row.収入上限 ?? Infinity;
+    if(en<=joge) return row.控除額!=null ? row.控除額 : Math.round(row.計算式(en));
+  }
+  return PARAMS.給与所得控除.at(-1).控除額;
+}
+function calcKyuyoShotoku(nenshuMan){
+  const en = manToEn(nenshuMan);
+  return Math.max(0, en - calcKyuyoKoujo(en));
+}
+function calcNenkinKoujo(en, age){
+  const table = age>=65 ? PARAMS.年金控除["65+"] : PARAMS.年金控除["65-"];
+  for(const row of table){
+    const joge = row.収入上限 ?? Infinity;
+    if(en<=joge) return row.控除額!=null ? row.控除額 : Math.round(row.計算式(en));
+  }
+  return table.at(-1).控除額;
+}
+function calcNenkinShotoku(nenkinMan, age){
+  const en = manToEn(nenkinMan);
+  return Math.max(0, en - calcNenkinKoujo(en, age));
+}
+function calcKiso(shotoku){
+  for(const row of PARAMS.基礎控除){
+    const joge = row.上限 ?? Infinity;
+    if(shotoku<=joge) return row.額;
+  }
+  return 0;
+}
+function calcHaigusha(haigushaNenshuMan, honninShotoku, juminzei){
+  if(haigushaNenshuMan==null) return 0;
+  const haiShotoku = calcKyuyoShotoku(haigushaNenshuMan);
+  const manIppan = juminzei? PARAMS.住民税.配偶者控除.一般 : PARAMS.配偶者控除.一般;
+  if(haiShotoku<=PARAMS.配偶者控除.所得要件) return manIppan;
+  if(haiShotoku>1330000) return 0;
+  let col;
+  if(honninShotoku<=9000000) col='c900';
+  else if(honninShotoku<=9500000) col='c950';
+  else if(honninShotoku<=10000000) col='c1000';
+  else return 0;
+  for(const row of PARAMS.配偶者控除.特別控除表){
+    if(haiShotoku>=row.下限 && haiShotoku<=row.上限){
+      const v = row[col];
+      return juminzei ? Math.round(v*(330000/380000)) : v;
+    }
+  }
+  return 0;
+}
+function calcFuyou(deps, juminzei){
+  const t = juminzei? PARAMS.住民税.扶養控除 : PARAMS.扶養控除;
+  let goukei = 0;
+  for(const d of deps){
+    let g=0;
+    if(d.kubun==='kodomo'){
+      if(d.age<=15) g=0;
+      else if(d.age<=18) g=t.c16_18;
+      else if(d.age<=22) g=t.c19_22;
+      else g=t.c23plus;
+    } else {
+      if(d.age<70) g=t.c23plus;
+      else if(d.doukyo) g=t.oya70doukyo;
+      else g=t.oya70betsu;
+    }
+    goukei+=g;
+  }
+  return goukei;
+}
+function calcShotokuzei(shotoku){
+  for(const row of PARAMS.所得税速算表){
+    const joge = row.上限 ?? Infinity;
+    if(shotoku<=joge) return Math.max(0, Math.round(shotoku*row.税率-row.控除));
+  }
+  return 0;
+}
+function calcJuminzei(shotoku){
+  const wari = Math.round(shotoku*PARAMS.住民税.税率);
+  return { 所得割: wari, 均等割: PARAMS.住民税.均等割, 合計: wari+PARAMS.住民税.均等割 };
+}
+function calcKokuho(shotokuGoukei, age){
+  const p = PARAMS.国保_芦屋市;
+  const santei = Math.max(0, shotokuGoukei - 430000);
+  const iryo = Math.min(santei*p.医療.率 + p.医療.均等 + p.医療.平等, p.医療.上限);
+  const shien = Math.min(santei*p.支援.率 + p.支援.均等 + p.支援.平等, p.支援.上限);
+  const kaigo = (age>=40&&age<65) ? Math.min(santei*p.介護.率 + p.介護.均等 + p.介護.平等, p.介護.上限) : 0;
+  return { 医療:iryo, 支援:shien, 介護:kaigo, 合計: iryo+shien+kaigo };
+}
+
+function calcKoukiKoreisha(shotoku){
+  const p = PARAMS_TOUKEI.後期高齢者医療_全国目安;
+  const santei = Math.max(0, shotoku - 430000);
+  return Math.min(p.均等割 + santei*p.所得割率, p.上限);
+}
+
+function calcNenkinTedori(nenkinMan, age){
+  if(nenkinMan<=0) return 0;
+  const nenkinShotoku = calcNenkinShotoku(nenkinMan, age);
+  const hoken = age>=75 ? calcKoukiKoreisha(nenkinShotoku) : calcKokuho(nenkinShotoku, age).合計;
+
+  const kisoT = calcKiso(nenkinShotoku);
+  const kazeiT = Math.max(0, chopSen(nenkinShotoku - kisoT - hoken));
+  const shotokuzeiHonzei = calcShotokuzei(kazeiT);
+  const shotokuzei = shotokuzeiHonzei + Math.round(shotokuzeiHonzei*PARAMS.復興税率);
+
+  const kisoJ = PARAMS.住民税.基礎控除;
+  const kazeiJ = Math.max(0, chopSen(nenkinShotoku - kisoJ - hoken));
+  const juminzei = calcJuminzei(kazeiJ);
+
+  const tedoriEn = manToEn(nenkinMan) - hoken - shotokuzei - juminzei.合計;
+  return Math.max(0, enToMan(tedoriEn));
+}
+
+// 配偶者の給与所得のみの手取りを概算する（統合エンジン専用ヘルパー）。
+// 配偶者を単独の給与所得者としてcalcAllに通し、税・社会保険料を差し引いた実際の手取りを返す。
+// 配偶者自身が国保・特例退職等に加入しているケースは考慮せず、簡略化のため「会社の社保」を前提とする。
+function calcHaigushaKyuyoTedori(nenshuMan, age){
+  if(nenshuMan<=0) return 0;
+  const r = calcAll({
+    kyuyo:{has:true,nenshuMan:nenshuMan}, jigyo:{has:false,shotokuMan:0}, zassho:{has:false,shotokuMan:0}, nenkin:{has:false,nenkinMan:0},
+    shahokenType:'shakaihoken', sonota:{getsugakuMan:0,ritsu:0}, age:age,
+    haigushaNenshuMan:null, dependents:[], idecoMan:0,
+  });
+  return r.手取り;
+}
+
+function calcAll(input){
+  const { kyuyo, jigyo, zassho, nenkin, shahokenType, sonota, age, haigushaNenshuMan, dependents, idecoMan } = input;
+
+  const kyuyoShotoku = kyuyo.has ? calcKyuyoShotoku(kyuyo.nenshuMan) : 0;
+  const jigyoShotoku = jigyo.has ? manToEn(jigyo.shotokuMan) : 0;
+  const zasshoShotoku = zassho.has ? manToEn(zassho.shotokuMan) : 0;
+  const nenkinShotoku = nenkin.has ? calcNenkinShotoku(nenkin.nenkinMan, age) : 0;
+  const goukeiShotoku = kyuyoShotoku + jigyoShotoku + zasshoShotoku + nenkinShotoku;
+
+  let shakaiHoken, shahokenNaiyaku;
+  if(shahokenType==='shakaihoken'){
+    const s = calcShakaiHoken(kyuyo.has?kyuyo.nenshuMan:0, age);
+    shakaiHoken = s.合計;
+    shahokenNaiyaku = { 健康保険:enToMan(s.kenkou), 介護保険:enToMan(s.kaigo), 厚生年金:enToMan(s.kousei), 雇用保険:enToMan(s.koyou) };
+  } else if(shahokenType==='kokuho'){
+    const k = calcKokuho(goukeiShotoku, age);
+    const kokuminNenkin = age<60 ? PARAMS.国民年金_年額 : 0;
+    shakaiHoken = k.合計 + kokuminNenkin;
+    shahokenNaiyaku = { 医療分:enToMan(k.医療), 支援金分:enToMan(k.支援), 介護分:enToMan(k.介護), 国民年金:enToMan(kokuminNenkin) };
+  } else {
+    const getsugakuEn = manToEn(sonota.getsugakuMan);
+    const kenkou = Math.round(getsugakuEn * (sonota.ritsu/100) * 12);
+    const kaigo = (age>=40&&age<65) ? Math.round(getsugakuEn * PARAMS.その他社保_介護保険料率目安 * 12) : 0;
+    const kokuminNenkin = age<60 ? PARAMS.国民年金_年額 : 0;
+    shakaiHoken = kenkou + kaigo + kokuminNenkin;
+    shahokenNaiyaku = { 健康保険:enToMan(kenkou), 介護保険:enToMan(kaigo), 国民年金:enToMan(kokuminNenkin) };
+  }
+
+  const idecoKoujo = manToEn(idecoMan||0);
+
+  const kisoT = calcKiso(goukeiShotoku);
+  const haiT = calcHaigusha(haigushaNenshuMan, goukeiShotoku, false);
+  const fuyoT = calcFuyou(dependents, false);
+  const koujoT = kisoT + shakaiHoken + haiT + fuyoT + idecoKoujo;
+  const kazeiT = Math.max(0, chopSen(goukeiShotoku - koujoT));
+  const shotokuzeiHonzei = calcShotokuzei(kazeiT);
+  const fukko = Math.round(shotokuzeiHonzei*PARAMS.復興税率);
+  const shotokuzei = shotokuzeiHonzei + fukko;
+
+  const kisoJ = PARAMS.住民税.基礎控除;
+  const haiJ = calcHaigusha(haigushaNenshuMan, goukeiShotoku, true);
+  const fuyoJ = calcFuyou(dependents, true);
+  const koujoJ = kisoJ + shakaiHoken + haiJ + fuyoJ + idecoKoujo;
+  const kazeiJ = Math.max(0, chopSen(goukeiShotoku - koujoJ));
+  const juminzei = calcJuminzei(kazeiJ);
+
+  const gakumenGoukei = manToEn(kyuyo.has?kyuyo.nenshuMan:0) + manToEn(jigyo.has?jigyo.shotokuMan:0) + manToEn(zassho.has?zassho.shotokuMan:0) + manToEn(nenkin.has?nenkin.nenkinMan:0);
+  const tedori = gakumenGoukei - shakaiHoken - shotokuzei - juminzei.合計;
+
+  let keikoku = null;
+  if(haigushaNenshuMan!=null && manToEn(haigushaNenshuMan) > 1300000){
+    keikoku = "配偶者の年収が130万円を超えています。税制上の配偶者控除の対象でも、社会保険の扶養（130万円の壁）からは外れる可能性があります。2026年10月からは106万円の壁の要件も変わるため、勤務先の社会保険担当にご確認ください。";
+  }
+
+  return {
+    給与所得: enToMan(kyuyoShotoku), 事業所得: enToMan(jigyoShotoku), 雑所得業務: enToMan(zasshoShotoku), 雑所得年金: enToMan(nenkinShotoku),
+    社保種類: shahokenType, 社保内訳: shahokenNaiyaku, 社保合計: enToMan(shakaiHoken),
+    所得税: enToMan(shotokuzei), 住民税: enToMan(juminzei.合計),
+    手取り: enToMan(tedori), 警告: keikoku,
+  };
+}
+
+// ===== UI =====
+document.querySelectorAll('.source-head').forEach(head=>{
+  const cb = head.querySelector('input[type=checkbox]');
+  const body = document.getElementById(head.dataset.target);
+  const sync = ()=> body.classList.toggle('open', cb.checked);
+  cb.addEventListener('change', sync);
+  head.addEventListener('click', (e)=>{ if(e.target!==cb){ cb.checked=!cb.checked; sync(); } });
+  sync();
+});
+
+let depSeq = 0;
+const kodomoList = document.getElementById('kodomoList');
+const oyaList = document.getElementById('oyaList');
+
+function addDepRow(container, kubun, age, doukyo=true, independAge=18){
+  const id = 'd'+(depSeq++);
+  const el = document.createElement('div');
+  el.className = kubun==='kodomo' ? 'dep-item kodomo-extra' : 'dep-item simple';
+  el.dataset.id = id;
+  el.dataset.kubun = kubun;
+  const independField = kubun==='kodomo'
+    ? `<input type="number" class="dep-independ" value="${independAge}" min="0" max="99" title="独立予定年齢（この年齢で世帯人数から外れます）">`
+    : '';
+  el.innerHTML = `
+    <input type="number" class="dep-age" value="${age}" min="0" max="110">
+    <select class="dep-doukyo">
+      <option value="yes" ${doukyo?'selected':''}>同居</option>
+      <option value="no" ${!doukyo?'selected':''}>別居</option>
+    </select>
+    ${independField}
+    <button type="button" class="del">×</button>`;
+  el.querySelector('.del').addEventListener('click', ()=> { el.remove(); syncJugyoryoRows(); autoRefreshGroupB(); });
+  container.appendChild(el);
+}
+
+function getAllDependents(){
+  const fromKodomo = kodomoToggle.querySelector('.active').dataset.v==='yes'
+    ? [...kodomoList.children].map(el=>({ kubun:'kodomo', age: parseInt(el.querySelector('.dep-age').value)||0, doukyo: el.querySelector('.dep-doukyo').value==='yes', independAge: parseInt(el.querySelector('.dep-independ').value)||18 }))
+    : [];
+  const fromOya = oyaToggle.querySelector('.active').dataset.v==='yes'
+    ? [...oyaList.children].map(el=>({ kubun:'oya', age: parseInt(el.querySelector('.dep-age').value)||0, doukyo: el.querySelector('.dep-doukyo').value==='yes' }))
+    : [];
+  return [...fromKodomo, ...fromOya];
+}
+
+const kodomoToggle = document.getElementById('kodomoToggle');
+const kodomoSection = document.getElementById('kodomoSection');
+kodomoToggle.addEventListener('click', (e)=>{
+  const btn = e.target.closest('button'); if(!btn) return;
+  [...kodomoToggle.children].forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const on = btn.dataset.v==='yes';
+  kodomoSection.style.display = on ? 'block' : 'none';
+  if(on && kodomoList.children.length===0) addDepRow(kodomoList, 'kodomo', 10);
+  if(!on) kodomoList.innerHTML = '';
+  syncJugyoryoRows();
+  autoRefreshGroupB();
+});
+document.getElementById('addKodomo').addEventListener('click', ()=> { addDepRow(kodomoList, 'kodomo', 10); syncJugyoryoRows(); autoRefreshGroupB(); });
+kodomoList.addEventListener('change', ()=>{ syncJugyoryoRows(); autoRefreshGroupB(); });
+
+const oyaToggle = document.getElementById('oyaToggle');
+const oyaSection = document.getElementById('oyaSection');
+oyaToggle.addEventListener('click', (e)=>{
+  const btn = e.target.closest('button'); if(!btn) return;
+  [...oyaToggle.children].forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const on = btn.dataset.v==='yes';
+  oyaSection.style.display = on ? 'block' : 'none';
+  if(on && oyaList.children.length===0) addDepRow(oyaList, 'oya', 70);
+  if(!on) oyaList.innerHTML = '';
+  autoRefreshGroupB();
+});
+document.getElementById('addOya').addEventListener('click', ()=> { addDepRow(oyaList, 'oya', 70); autoRefreshGroupB(); });
+oyaList.addEventListener('change', autoRefreshGroupB);
+
+const haigushaToggle = document.getElementById('haigushaToggle');
+const haigushaNenshuRow = document.getElementById('haigushaNenshuRow');
+const haigushaAgeRow = document.getElementById('haigushaAgeRow');
+const haigushaNenkinRow = document.getElementById('haigushaNenkinRow');
+const haigushaNenkinGakuRow = document.getElementById('haigushaNenkinGakuRow');
+const haigushaTaishokuAgeRow = document.getElementById('haigushaTaishokuAgeRow');
+const haigushaTaishokukinRow = document.getElementById('haigushaTaishokukinRow');
+haigushaToggle.addEventListener('click', (e)=>{
+  const btn = e.target.closest('button'); if(!btn) return;
+  [...haigushaToggle.children].forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const on = btn.dataset.v==='yes';
+  haigushaNenshuRow.style.display = on ? 'flex' : 'none';
+  haigushaAgeRow.style.display = on ? 'flex' : 'none';
+  haigushaNenkinRow.style.display = on ? 'flex' : 'none';
+  haigushaNenkinGakuRow.style.display = on ? 'flex' : 'none';
+  haigushaTaishokuAgeRow.style.display = on ? 'flex' : 'none';
+  haigushaTaishokukinRow.style.display = on ? 'flex' : 'none';
+});
+
+const shahokenToggle = document.getElementById('shahokenToggle');
+const sonotaRows = document.getElementById('sonotaRows');
+shahokenToggle.addEventListener('click', (e)=>{
+  const btn = e.target.closest('button'); if(!btn) return;
+  [...shahokenToggle.children].forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  sonotaRows.style.display = btn.dataset.v==='sonota' ? 'block' : 'none';
+});
+
+function autoSuggestShahoken(){
+  const kyuyoOn = document.getElementById('has-kyuyo').checked;
+  const others = document.getElementById('has-jigyo').checked || document.getElementById('has-zassho').checked || document.getElementById('has-nenkin').checked;
+  if(!kyuyoOn && others && shahokenToggle.querySelector('.active').dataset.v==='shakaihoken'){
+    [...shahokenToggle.children].forEach(b=>b.classList.toggle('active', b.dataset.v==='kokuho'));
+    sonotaRows.style.display = 'none';
+  }
+}
+document.getElementById('has-jigyo').addEventListener('change', autoSuggestShahoken);
+document.getElementById('has-zassho').addEventListener('change', autoSuggestShahoken);
+document.getElementById('has-nenkin').addEventListener('change', autoSuggestShahoken);
+document.getElementById('has-kyuyo').addEventListener('change', autoSuggestShahoken);
+
+document.getElementById('calcBtn').addEventListener('click', ()=>{
+  const kyuyo = { has: document.getElementById('has-kyuyo').checked, nenshuMan: parseFloat(document.getElementById('nenshu').value)||0 };
+  const jigyo = { has: document.getElementById('has-jigyo').checked, shotokuMan: parseFloat(document.getElementById('jigyoShotoku').value)||0 };
+  const zassho = { has: document.getElementById('has-zassho').checked, shotokuMan: parseFloat(document.getElementById('zasshoShotoku').value)||0 };
+  const nenkin = { has: document.getElementById('has-nenkin').checked, nenkinMan: parseFloat(document.getElementById('nenkinGaku').value)||0 };
+  const age = parseInt(document.getElementById('age').value)||0;
+  const shahokenType = shahokenToggle.querySelector('.active').dataset.v;
+  const sonota = { getsugakuMan: parseFloat(document.getElementById('sonotaGetsugaku').value)||0, ritsu: parseFloat(document.getElementById('sonotaRitsu').value)||0 };
+  const hasHaigusha = haigushaToggle.querySelector('.active').dataset.v==='yes';
+  const haigushaNenshuMan = hasHaigusha ? (parseFloat(document.getElementById('haigushaNenshu').value)||0) : null;
+  const idecoMan = parseFloat(document.getElementById('ideco').value)||0;
+  const otherIncome = document.getElementById('otherIncome').checked;
+  const dependents = getAllDependents();
+
+  if(!kyuyo.has && !jigyo.has && !zassho.has && !nenkin.has){
+    document.getElementById('resultBody').innerHTML = '<p class="placeholder">収入源を1つ以上選択してください</p>';
+    return;
+  }
+
+  const r = calcAll({ kyuyo, jigyo, zassho, nenkin, shahokenType, sonota, age, haigushaNenshuMan, dependents, idecoMan });
+
+  const shahokenLabel = { shakaihoken:'社会保険料', kokuho:'国保＋国民年金', sonota:'その他社保（特例退職等）' }[shahokenType];
+  const shahokenRows = Object.entries(r.社保内訳).map(([k,v])=>
+    `<div class="srow"><span>${k}</span><span class="sval">− ${v.toLocaleString()} 万円</span></div>`
+  ).join('');
+
+  const incomeRows = [];
+  if(kyuyo.has) incomeRows.push(`<div class="brow"><span>給与所得</span><span class="bval">${r.給与所得.toLocaleString()} 万円</span></div>`);
+  if(jigyo.has) incomeRows.push(`<div class="brow"><span>事業所得</span><span class="bval">${r.事業所得.toLocaleString()} 万円</span></div>`);
+  if(zassho.has) incomeRows.push(`<div class="brow"><span>雑所得（業務）</span><span class="bval">${r.雑所得業務.toLocaleString()} 万円</span></div>`);
+  if(nenkin.has) incomeRows.push(`<div class="brow"><span>雑所得（年金）</span><span class="bval">${r.雑所得年金.toLocaleString()} 万円</span></div>`);
+
+  const resultBody = document.getElementById('resultBody');
+  resultBody.innerHTML = `
+    <div class="headline">
+      <div class="label">年間手取り収入（概算）</div>
+      <div class="value">${r.手取り.toLocaleString()}<span>万円</span></div>
+    </div>
+    <div class="breakdown">
+      ${incomeRows.join('')}
+      <div class="brow clickable" id="shahoRow">
+        <span class="bkey"><span class="chevron">▶</span>${shahokenLabel}</span>
+        <span class="bval">− ${r.社保合計.toLocaleString()} 万円</span>
+      </div>
+      <div class="sub-breakdown" id="shahoDetail">${shahokenRows}</div>
+      <div class="brow"><span>所得税</span><span class="bval">− ${r.所得税.toLocaleString()} 万円</span></div>
+      <div class="brow"><span>住民税</span><span class="bval">− ${r.住民税.toLocaleString()} 万円</span></div>
+    </div>
+    ${r.警告 ? `<div class="warn">⚠ ${r.警告}</div>` : ''}
+    ${otherIncome ? `<div class="warn">この診断には不動産・配当・譲渡などの所得は含まれていません。別途ご確認ください。</div>` : ''}
+  `;
+  document.getElementById('shahoRow').addEventListener('click', ()=>{
+    document.getElementById('shahoRow').classList.toggle('open');
+    document.getElementById('shahoDetail').classList.toggle('open');
+  });
+  const stamp = document.getElementById('stamp');
+  stamp.classList.remove('show');
+  void stamp.offsetWidth;
+  stamp.classList.add('show');
+});
+
+// ===== グループA：支出確認 =====
+
+const jukyoToggle = document.getElementById('jukyoToggle');
+const yachinRow = document.getElementById('yachinRow');
+const loanRow = document.getElementById('loanRow');
+jukyoToggle.addEventListener('click', (e)=>{
+  const btn = e.target.closest('button'); if(!btn) return;
+  [...jukyoToggle.children].forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const v = btn.dataset.v;
+  yachinRow.style.display = v==='chintai' ? 'flex' : 'none';
+  loanRow.style.display = v==='loan' ? 'flex' : 'none';
+});
+
+const carToggle = document.getElementById('carToggle');
+const carRows = document.getElementById('carRows');
+carToggle.addEventListener('click', (e)=>{
+  const btn = e.target.closest('button'); if(!btn) return;
+  [...carToggle.children].forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  carRows.style.display = btn.dataset.v==='ari' ? 'block' : 'none';
+});
+
+document.querySelectorAll('input.preset').forEach(inp=>{
+  inp.addEventListener('input', ()=>{ inp.classList.remove('preset'); inp.classList.add('edited'); });
+});
+
+function gakuseiLabel(age){
+  if(age>=6 && age<=11) return '小学校';
+  if(age>=12 && age<=14) return '中学校';
+  if(age>=15 && age<=17) return '高校';
+  if(age>=18 && age<=22) return '大学等';
+  return null;
+}
+function syncJugyoryoRows(){
+  const container = document.getElementById('jugyoryoList');
+  const prevValues = {};
+  container.querySelectorAll('.jugyoryo-input').forEach(inp=>{ prevValues[inp.dataset.depId] = inp.value; });
+
+  const kodomoOn = kodomoToggle.querySelector('.active').dataset.v==='yes';
+  const kids = kodomoOn ? [...kodomoList.children].filter(el=>{
+    const age = parseInt(el.querySelector('.dep-age').value)||0;
+    return gakuseiLabel(age);
+  }) : [];
+
+  if(kids.length===0){
+    container.innerHTML = '<p class="placeholder" id="jugyoryoPlaceholder">扶養家族に6歳以上のお子さまを登録すると、ここに授業料の入力欄が表示されます</p>';
+    return;
+  }
+  container.innerHTML = kids.map(el=>{
+    const depId = el.dataset.id;
+    const age = parseInt(el.querySelector('.dep-age').value)||0;
+    const label = gakuseiLabel(age);
+    const prev = prevValues[depId] ?? 0;
+    return `<div class="row">
+      <label>${label}（${age}歳）の年間授業料</label>
+      <div class="field"><input type="number" class="jugyoryo-input" data-dep-id="${depId}" value="${prev}" min="0"><span class="unit">万円/年</span></div>
+    </div>`;
+  }).join('');
+}
+
+document.getElementById('calcGroupABtn').addEventListener('click', ()=>{
+  const jukyo = jukyoToggle.querySelector('.active').dataset.v;
+  let jukyoMan = 0;
+  if(jukyo==='chintai') jukyoMan = parseFloat(document.getElementById('yachin').value)||0;
+  if(jukyo==='loan') jukyoMan = parseFloat(document.getElementById('jutakuLoan').value)||0;
+  const kasaiHokenEn = parseFloat(document.getElementById('kasaiHoken').value)||0;
+
+  const carOn = carToggle.querySelector('.active').dataset.v==='ari';
+  const carLoanMan = carOn ? (parseFloat(document.getElementById('carLoan').value)||0) : 0;
+  const carTaxMan = carOn ? (parseFloat(document.getElementById('carTax').value)||0) : 0;
+  const carHokenEn = carOn ? (parseFloat(document.getElementById('carHoken').value)||0) : 0;
+
+  const seimeiHokenMan = parseFloat(document.getElementById('seimeiHoken').value)||0;
+  const iryoHokenEn = parseFloat(document.getElementById('iryoHoken').value)||0;
+
+  const jugyoryoRows = [...document.querySelectorAll('.jugyoryo-input')].map(inp=>({
+    label: inp.closest('.row').querySelector('label').textContent,
+    nenMan: parseFloat(inp.value)||0,
+  }));
+  const jugyoryoGetsuMan = jugyoryoRows.reduce((s,r)=> s + r.nenMan/12, 0);
+
+  const totalMan = jukyoMan + (kasaiHokenEn/10000) + carLoanMan + carTaxMan + (carHokenEn/10000) + seimeiHokenMan + (iryoHokenEn/10000) + jugyoryoGetsuMan;
+
+  const rows = [];
+  rows.push({label: jukyo==='chintai' ? '家賃' : (jukyo==='loan' ? '住宅ローン返済額' : '住居費（ローンなし）'), val: jukyoMan});
+  rows.push({label:'火災・地震保険料', val: kasaiHokenEn/10000});
+  if(carOn){
+    rows.push({label:'自動車ローン返済額', val: carLoanMan});
+    rows.push({label:'自動車税・車検（月割り）', val: carTaxMan});
+    rows.push({label:'自動車保険料', val: carHokenEn/10000});
+  }
+  rows.push({label:'生命保険・個人年金保険料', val: seimeiHokenMan});
+  rows.push({label:'医療保険料', val: iryoHokenEn/10000});
+  if(jugyoryoRows.length){
+    rows.push({label:'学校授業料（月換算）', val: jugyoryoGetsuMan});
+  }
+
+  const rowsHtml = rows.map(r=>
+    `<div class="brow"><span>${r.label}</span><span class="bval">${r.val.toFixed(2)} 万円</span></div>`
+  ).join('');
+
+  document.getElementById('groupAResult').innerHTML = `
+    <div class="subtotal-row">
+      <span class="label">グループA 月額合計</span>
+      <span class="value">${totalMan.toFixed(2)}<span>万円/月</span></span>
+    </div>
+    <div class="breakdown" style="margin-top:14px;">${rowsHtml}</div>
+    <div class="subtotal-note">火災・地震保険料／自動車保険料／医療保険料は、グループB（目安の金額）側の該当費目からこの金額を差し引いて二重計上を防ぎます。</div>
+  `;
+});
+
+// ===== グループB：統計初期値 =====
+const PARAMS_B = PARAMS_TOUKEI.グループB;
+const INCOME_BOUNDARY_MAN_GETSU = PARAMS_TOUKEI.年収五分位境界_万円月額;
+
+function getHouseholdSizeIndex(){
+  const hasHaigusha = haigushaToggle.querySelector('.active').dataset.v==='yes';
+  const doukyoDeps = getAllDependents().filter(d=>d.doukyo).length;
+  let n = 1 + (hasHaigusha?1:0) + doukyoDeps;
+  n = Math.max(1, Math.min(6, n));
+  return n - 1;
+}
+function getIncomeQuintileIndex(){
+  const nenshuMan = parseFloat(document.getElementById('nenshu').value)||0;
+  const hasHaigusha = haigushaToggle.querySelector('.active').dataset.v==='yes';
+  const haigushaMan = hasHaigusha ? (parseFloat(document.getElementById('haigushaNenshu').value)||0) : 0;
+  const setaiGetsuMan = (nenshuMan + haigushaMan) / 12;
+  let idx = 0;
+  for(let i=0;i<INCOME_BOUNDARY_MAN_GETSU.length;i++){
+    if(setaiGetsuMan >= INCOME_BOUNDARY_MAN_GETSU[i]) idx = i+1;
+  }
+  return idx;
+}
+const QUINTILE_LABEL = PARAMS_TOUKEI.年収五分位ラベル;
+
+function groupBInitial(cat, houseIdx, incomeIdx){
+  const p = PARAMS_B[cat];
+  return (p.house[houseIdx] * p.income[incomeIdx]) / p.base;
+}
+
+function hasSpouseNote(){
+  const hasHaigusha = haigushaToggle.querySelector('.active').dataset.v==='yes';
+  return hasHaigusha ? '＋配偶者の年収合算' : 'のみの年収';
+}
+
+let groupBTouched = false;
+function refreshGroupB(){
+  const houseIdx = getHouseholdSizeIndex();
+  const incomeIdx = getIncomeQuintileIndex();
+  const container = document.getElementById('groupBRows');
+
+  if(container.children.length === 0){
+    container.innerHTML = Object.keys(PARAMS_B).map(cat=>{
+      const val = Math.max(0, Math.round(groupBInitial(cat, houseIdx, incomeIdx)));
+      const id = 'gb_'+cat.replace(/[^a-zA-Z0-9]/g,'');
+      return `<div class="row">
+        <label>${cat}</label>
+        <div class="field"><input type="number" class="preset groupb-input" id="${id}" data-cat="${cat}" value="${val}" min="0"><span class="unit">円/月</span></div>
+      </div>`;
+    }).join('');
+    container.querySelectorAll('input.preset').forEach(inp=>{
+      inp.addEventListener('input', ()=>{ inp.classList.remove('preset'); inp.classList.add('edited'); });
+    });
+  } else {
+    container.querySelectorAll('input.groupb-input.preset').forEach(inp=>{
+      const cat = inp.dataset.cat;
+      inp.value = Math.max(0, Math.round(groupBInitial(cat, houseIdx, incomeIdx)));
+    });
+  }
+
+  const rows = [...document.querySelectorAll('.groupb-input')].map(inp=>({
+    label: inp.dataset.cat, valEn: parseFloat(inp.value)||0,
+  }));
+  const totalEn = rows.reduce((s,r)=> s + r.valEn, 0);
+  const totalMan = totalEn / 10000;
+  const rowsHtml = rows.map(r=>
+    `<div class="brow"><span>${r.label}</span><span class="bval">${r.valEn.toLocaleString()} 円</span></div>`
+  ).join('');
+  document.getElementById('groupBResult').innerHTML = `
+    <div class="subtotal-row">
+      <span class="label">グループB 月額合計</span>
+      <span class="value">${totalMan.toFixed(2)}<span>万円/月</span></span>
+    </div>
+    <div class="breakdown" style="margin-top:14px;">${rowsHtml}</div>
+  `;
+  const houseLabel = (houseIdx+1)===6 ? '6人以上' : (houseIdx+1)+'人';
+  document.getElementById('groupBBasis').textContent =
+    `判定した世帯像：${houseLabel}世帯／年収五分位 ${QUINTILE_LABEL[incomeIdx]}（本人${hasSpouseNote()}）を基準に算出しています。世帯構成・年収を変更すると、まだ手を加えていない項目（灰色）だけ自動で更新されます。`;
+}
+
+document.getElementById('calcGroupBBtn').addEventListener('click', ()=>{
+  groupBTouched = true;
+  refreshGroupB();
+});
+
+function autoRefreshGroupB(){
+  if(!groupBTouched) return;
+  refreshGroupB();
+}
+document.getElementById('nenshu').addEventListener('input', autoRefreshGroupB);
+document.getElementById('haigushaNenshu').addEventListener('input', autoRefreshGroupB);
+haigushaToggle.addEventListener('click', autoRefreshGroupB);
+
+// ===== バランスシート =====
+
+const bsJutaku = document.getElementById('bsJutaku');
+bsJutaku.addEventListener('input', ()=>{ bsJutaku.classList.remove('preset'); bsJutaku.classList.add('edited'); });
+document.getElementById('bsHyoka').addEventListener('input', (e)=>{
+  if(!bsJutaku.classList.contains('preset')) return;
+  const hyoka = parseFloat(e.target.value)||0;
+  bsJutaku.value = Math.round(hyoka * 1.4);
+});
+
+document.getElementById('calcBSBtn').addEventListener('click', ()=>{
+  const v = id => document.getElementById(id).value;
+  const asset = {
+    '現金': v('bsGenkin'), '普通預金など': v('bsFutsu'), '定期性預金': v('bsTeiki'),
+    '貯蓄型の保険': v('bsChochikuHoken'), '株式': v('bsKabu'), '債券': v('bsSaiken'),
+    '投資信託': v('bsToshin'), 'その他の投資商品': v('bsSonotaToshi'),
+    '住宅（時価）': v('bsJutaku'), 'その他': v('bsSonota'),
+  };
+  const debt = {
+    '住宅ローン残高': v('bsJutakuLoan'), '自動車ローン残高': v('bsCarLoan'),
+    'カードローン残高': v('bsCardLoan'), '奨学金残高': v('bsShogaku'), 'その他': v('bsFusaiSonota'),
+  };
+  const toNum = v => parseFloat(v)||0;
+  const assetTotal = Object.values(asset).reduce((s,v)=> s+toNum(v), 0);
+  const debtTotal = Object.values(debt).reduce((s,v)=> s+toNum(v), 0);
+  const net = assetTotal - debtTotal;
+
+  const assetRows = Object.entries(asset).filter(([,v])=>toNum(v)>0).map(([k,v])=>
+    `<div class="brow"><span>${k}</span><span class="bval">${toNum(v).toLocaleString()} 万円</span></div>`).join('');
+  const debtRows = Object.entries(debt).filter(([,v])=>toNum(v)>0).map(([k,v])=>
+    `<div class="brow"><span>${k}</span><span class="bval">− ${toNum(v).toLocaleString()} 万円</span></div>`).join('');
+
+  document.getElementById('bsResult').innerHTML = `
+    <div class="subtotal-row">
+      <span class="label">純資産（資産合計 − 負債合計）</span>
+      <span class="value">${net.toLocaleString()}<span>万円</span></span>
+    </div>
+    <div class="breakdown" style="margin-top:14px;">
+      <div class="brow"><span>資産合計</span><span class="bval">${assetTotal.toLocaleString()} 万円</span></div>
+      ${assetRows}
+      <div class="brow" style="margin-top:8px;"><span>負債合計</span><span class="bval">− ${debtTotal.toLocaleString()} 万円</span></div>
+      ${debtRows}
+    </div>
+  `;
+});
+
+// ===== ライフプラン表 =====
+
+const loanPayoffAge = document.getElementById('loanPayoffAge');
+
+let reSeq = 0;
+const recurringEventList = document.getElementById('recurringEventList');
+const RECURRING_EVENT_PRESETS = ['再雇用の収入','家賃収入','個人年金保険の受取','介護費用','子への仕送り'];
+function addRecurringEventRow(startAge=60, type='income', label='', amountMan=0){
+  const id = 're'+(reSeq++);
+  const el = document.createElement('div');
+  el.className = 're-item';
+  el.dataset.id = id;
+  const isPreset = RECURRING_EVENT_PRESETS.includes(label);
+  el.innerHTML = `
+    <input type="number" class="re-start" placeholder="開始年齢" value="${startAge}" min="0" max="99">
+    <select class="re-type"><option value="income" ${type==='income'?'selected':''}>収入</option><option value="expense" ${type==='expense'?'selected':''}>支出</option></select>
+    <div class="ce-label-wrap">
+      <select class="re-preset" style="${label && !isPreset ? 'display:none;' : ''}">
+        <option value="">選択してください</option>
+        ${RECURRING_EVENT_PRESETS.map(p=>`<option value="${p}" ${p===label?'selected':''}>${p}</option>`).join('')}
+        <option value="その他" ${label && !isPreset ? 'selected':''}>その他（自由入力）</option>
+      </select>
+      <input type="text" class="re-label" placeholder="内容を入力" value="${label}" style="${label && !isPreset ? '' : 'display:none;'}">
+    </div>
+    <input type="number" class="re-amount" placeholder="年額(万円)" value="${amountMan||''}" min="0">
+    <button type="button" class="del">×</button>`;
+  const presetSelect = el.querySelector('.re-preset');
+  const labelInput = el.querySelector('.re-label');
+  presetSelect.addEventListener('change', ()=>{
+    if(presetSelect.value==='その他'){
+      presetSelect.style.display = 'none';
+      labelInput.style.display = '';
+      labelInput.value = '';
+      labelInput.focus();
+    } else {
+      labelInput.value = presetSelect.value;
+      const typeSelect = el.querySelector('.re-type');
+      typeSelect.value = (presetSelect.value==='介護費用') ? 'expense' : 'income';
+    }
+  });
+  el.querySelector('.del').addEventListener('click', ()=> el.remove());
+  recurringEventList.appendChild(el);
+}
+document.getElementById('addRecurringEvent').addEventListener('click', ()=> addRecurringEventRow());
+
+const STANDARD_EVENTS = PARAMS_TOUKEI.ライフプランイベント;
+
+function zoneOf(yearOffset){
+  if(yearOffset<=5) return 'short';
+  if(yearOffset<=15) return 'mid';
+  return 'long';
+}
+
+let ceSeq = 0;
+const customEventList = document.getElementById('customEventList');
+const CUSTOM_EVENT_PRESETS = ['結婚','出産','車の買い替え','住み替え・引っ越し','リフォーム','満期保険金（受取）','介護の初期費用','子への資金援助'];
+function addCustomEventRow(yearOffset=1, label='', amountMan=0){
+  const id = 'ce'+(ceSeq++);
+  const el = document.createElement('div');
+  el.className = 'ce-item';
+  el.dataset.id = id;
+  const isPreset = CUSTOM_EVENT_PRESETS.includes(label);
+  el.innerHTML = `
+    <select class="ce-year">${Array.from({length:30},(_,i)=>i+1).map(n=>`<option value="${n}" ${n===yearOffset?'selected':''}>${n}年後</option>`).join('')}</select>
+    <div class="ce-label-wrap">
+      <select class="ce-preset" style="${label && !isPreset ? 'display:none;' : ''}">
+        <option value="">選択してください</option>
+        ${CUSTOM_EVENT_PRESETS.map(p=>`<option value="${p}" ${p===label?'selected':''}>${p}</option>`).join('')}
+        <option value="その他" ${label && !isPreset ? 'selected':''}>その他（自由入力）</option>
+      </select>
+      <input type="text" class="ce-label" placeholder="内容を入力" value="${label}" style="${label && !isPreset ? '' : 'display:none;'}">
+    </div>
+    <input type="number" class="ce-amount" placeholder="金額(万円・任意)" value="${amountMan||''}" min="0">
+    <button type="button" class="del">×</button>`;
+  const presetSelect = el.querySelector('.ce-preset');
+  const labelInput = el.querySelector('.ce-label');
+  presetSelect.addEventListener('change', ()=>{
+    if(presetSelect.value==='その他'){
+      presetSelect.style.display = 'none';
+      labelInput.style.display = '';
+      labelInput.value = '';
+      labelInput.focus();
+    } else {
+      labelInput.value = presetSelect.value;
+    }
+  });
+  el.querySelector('.del').addEventListener('click', ()=> el.remove());
+  customEventList.appendChild(el);
+}
+document.getElementById('addCustomEvent').addEventListener('click', ()=> addCustomEventRow());
+
+document.getElementById('calcLifeEventBtn').addEventListener('click', ()=>{
+  const thisYear = new Date().getFullYear();
+  const honninAge = parseInt(document.getElementById('age').value)||0;
+  const hasHaigusha = haigushaToggle.querySelector('.active').dataset.v==='yes';
+  const haigushaAgeNow = hasHaigusha ? (parseInt(document.getElementById('haigushaAge').value)||0) : null;
+  const kodomoOn = kodomoToggle.querySelector('.active').dataset.v==='yes';
+  const kodomoAgesNow = kodomoOn ? [...kodomoList.children].map(el=> parseInt(el.querySelector('.dep-age').value)||0) : [];
+
+  const taishokuAge = parseInt(document.getElementById('taishokuAge').value)||65;
+  const nenkinMitoshiMan = parseFloat(document.getElementById('nenkinMitoshiMan').value)||0;
+  const haigushaNenkinAge = hasHaigusha ? (parseInt(document.getElementById('haigushaNenkinAge').value)||65) : null;
+  const haigushaNenkinMan = hasHaigusha ? (parseFloat(document.getElementById('haigushaNenkinMan').value)||0) : 0;
+
+  const taishokuAge2 = parseInt(document.getElementById('taishokuAge2').value)||65;
+  const taishokukinMan = parseFloat(document.getElementById('taishokukinMan').value)||0;
+  const haigushaTaishokuAge = hasHaigusha ? (parseInt(document.getElementById('haigushaTaishokuAge').value)||65) : null;
+  const haigushaTaishokukinMan = hasHaigusha ? (parseFloat(document.getElementById('haigushaTaishokukinMan').value)||0) : 0;
+  const loanPayoffAgeVal = parseInt(document.getElementById('loanPayoffAge').value)||0;
+
+  const customEvents = [...customEventList.querySelectorAll('.ce-item')].map(el=>({
+    yearOffset: parseInt(el.querySelector('.ce-year').value),
+    label: el.querySelector('.ce-label').value.trim(),
+    amountMan: parseFloat(el.querySelector('.ce-amount').value)||0,
+  })).filter(e=>e.label);
+
+  const recurringEvents = [...recurringEventList.querySelectorAll('.re-item')].map(el=>({
+    startAge: parseInt(el.querySelector('.re-start').value)||0,
+    type: el.querySelector('.re-type').value,
+    label: el.querySelector('.re-label').value.trim(),
+    amountMan: parseFloat(el.querySelector('.re-amount').value)||0,
+  })).filter(e=>e.label);
+
+  let headerCols = ['本人'];
+  if(hasHaigusha) headerCols.push('配偶者');
+  kodomoAgesNow.forEach((_,i)=> headerCols.push(`子${i+1}`));
+
+  const rows = [];
+  for(let offset=1; offset<=30; offset++){
+    const year = thisYear + offset;
+    const honninAgeY = honninAge + offset;
+    const haigushaAgeY = hasHaigusha ? haigushaAgeNow + offset : null;
+    const kodomoAgesY = kodomoAgesNow.map(a=> a + offset);
+    const zone = zoneOf(offset);
+
+    const events = [];
+    STANDARD_EVENTS.forEach(ev=>{
+      if(ev.who==='kodomo'){
+        kodomoAgesY.forEach((a,i)=>{
+          if(ev.ages.includes(a)) events.push({ label:`子${i+1} ${ev.label}`, amountPublic:ev.amountPublic, amountPrivate:ev.amountPrivate });
+        });
+      }
+    });
+
+    if(honninAgeY === taishokuAge2){
+      events.push({ label:'本人 退職', amountPublic: taishokukinMan>0?taishokukinMan:null, amountPrivate: taishokukinMan>0?taishokukinMan:null, isIncome:true, isCustom:true });
+    }
+    if(hasHaigusha && haigushaAgeY === haigushaTaishokuAge){
+      events.push({ label:'配偶者 退職', amountPublic: haigushaTaishokukinMan>0?haigushaTaishokukinMan:null, amountPrivate: haigushaTaishokukinMan>0?haigushaTaishokukinMan:null, isIncome:true, isCustom:true });
+    }
+    if(honninAgeY >= taishokuAge && nenkinMitoshiMan>0){
+      events.push({ label:'本人 年金収入', amountPublic:nenkinMitoshiMan, amountPrivate:nenkinMitoshiMan, isIncome:true, isCustom:true });
+    }
+    if(hasHaigusha && haigushaAgeY >= haigushaNenkinAge && haigushaNenkinMan>0){
+      events.push({ label:'配偶者 年金収入', amountPublic:haigushaNenkinMan, amountPrivate:haigushaNenkinMan, isIncome:true, isCustom:true });
+    }
+    if(loanPayoffAgeVal>0 && honninAgeY === loanPayoffAgeVal){
+      events.push({ label:'住宅ローン完済', amountPublic:null, amountPrivate:null, isCustom:true });
+    }
+    recurringEvents.forEach(e=>{
+      if(honninAgeY >= e.startAge){
+        events.push({ label:e.label, amountPublic:e.amountMan, amountPrivate:e.amountMan, isIncome:(e.type==='income'), isCustom:true });
+      }
+    });
+
+    customEvents.filter(e=>e.yearOffset===offset).forEach(e=>{
+      events.push({ label:e.label, amountPublic:e.amountMan, amountPrivate:e.amountMan, isCustom:true });
+    });
+
+    rows.push({ year, offset, zone, honninAgeY, haigushaAgeY, kodomoAgesY, events });
+  }
+
+  const zoneClass = z => z==='mid' ? 'le-zone-mid' : (z==='long' ? 'le-zone-long' : '');
+
+  const theadCols = ['年','経過', ...headerCols, 'イベント','金額の目安'].map(c=>`<th>${c}</th>`).join('');
+  const tbodyRows = rows.map(r=>{
+    const ageCells = [`<td>${r.honninAgeY}歳</td>`];
+    if(hasHaigusha) ageCells.push(`<td>${r.haigushaAgeY}歳</td>`);
+    r.kodomoAgesY.forEach(a=> ageCells.push(`<td>${a}歳</td>`));
+
+    const eventLabel = r.events.map(e=>e.label).join('／') || '−';
+
+    let amountCell = '−';
+    if(r.events.length){
+      amountCell = r.events.map(e=>{
+        if(e.isCustom || e.isIncome){
+          const sign = e.isIncome ? '＋' : (e.isCustom ? '−' : '');
+          const amtText = e.amountPublic==null ? '（金額未入力）' : `${sign}${e.amountPublic}万円`;
+          return `${e.label}: ${amtText}`;
+        }
+        if(r.zone==='short'){
+          return e.amountPublic==null ? `${e.label}: （金額なし）` : `${e.label}: ${e.amountPublic}万円`;
+        } else if(r.zone==='mid'){
+          if(e.amountPublic==null) return `${e.label}: （金額なし）`;
+          if(e.amountPublic===e.amountPrivate) return `${e.label}: 目安${e.amountPublic}万円`;
+          return `${e.label}: ${e.amountPublic}〜${e.amountPrivate}万円`;
+        } else {
+          return `${e.label}: ⚠ 注意信号（金額は出しません）`;
+        }
+      }).join('<br>');
+    }
+
+    return `<tr class="${zoneClass(r.zone)}">
+      <td class="le-year-cell">${r.year}</td>
+      <td>${r.offset}年後</td>
+      ${ageCells.join('')}
+      <td class="le-event">${eventLabel}</td>
+      <td class="le-amount">${amountCell}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('lifeEventResult').innerHTML = `
+    <table class="le-table"><thead><tr>${theadCols}</tr></thead><tbody>${tbodyRows}</tbody></table>
+    <div class="subtotal-note" style="margin-top:10px;">白背景＝短期（〜5年・金額入り）／クリーム色＝中期（6〜15年・公立〜私立のレンジ）／グレー＝長期（16〜30年・金額は出さず注意信号のみ）</div>
+  `;
+});
+
+// ===== 統合エンジン：全パネルの入力を1回読み取り、30年分のキャッシュフローを計算する =====
+
+function collectAllInputs(){
+  const honninAge = parseInt(document.getElementById('age').value)||0;
+  const hasHaigusha = haigushaToggle.querySelector('.active').dataset.v==='yes';
+  const haigushaAgeNow = hasHaigusha ? (parseInt(document.getElementById('haigushaAge').value)||0) : null;
+  const haigushaNenshuMan = hasHaigusha ? (parseFloat(document.getElementById('haigushaNenshu').value)||0) : 0;
+  const shahokenType = shahokenToggle.querySelector('.active').dataset.v;
+  const sonota = { getsugakuMan: parseFloat(document.getElementById('sonotaGetsugaku').value)||0, ritsu: parseFloat(document.getElementById('sonotaRitsu').value)||0 };
+  const idecoMan = parseFloat(document.getElementById('ideco').value)||0;
+
+  const hasKyuyo = document.getElementById('has-kyuyo').checked;
+  const kyuyoNenshuMan = parseFloat(document.getElementById('nenshu').value)||0;
+  const hasJigyo = document.getElementById('has-jigyo').checked;
+  const jigyoShotokuMan = parseFloat(document.getElementById('jigyoShotoku').value)||0;
+  const hasZassho = document.getElementById('has-zassho').checked;
+  const zasshoShotokuMan = parseFloat(document.getElementById('zasshoShotoku').value)||0;
+
+  const dependents = getAllDependents();
+
+  const jukyo = jukyoToggle.querySelector('.active').dataset.v;
+  const yachinMan = jukyo==='chintai' ? (parseFloat(document.getElementById('yachin').value)||0) : 0;
+  const jutakuLoanMan = jukyo==='loan' ? (parseFloat(document.getElementById('jutakuLoan').value)||0) : 0;
+  const kasaiHokenEn = parseFloat(document.getElementById('kasaiHoken').value)||0;
+  const carOn = carToggle.querySelector('.active').dataset.v==='ari';
+  const carLoanMan = carOn ? (parseFloat(document.getElementById('carLoan').value)||0) : 0;
+  const carTaxMan = carOn ? (parseFloat(document.getElementById('carTax').value)||0) : 0;
+  const carHokenEn = carOn ? (parseFloat(document.getElementById('carHoken').value)||0) : 0;
+  const seimeiHokenMan = parseFloat(document.getElementById('seimeiHoken').value)||0;
+  const iryoHokenEn = parseFloat(document.getElementById('iryoHoken').value)||0;
+  const jugyoryoNenMan = [...document.querySelectorAll('.jugyoryo-input')].reduce((s,inp)=> s+(parseFloat(inp.value)||0), 0);
+  const loanPayoffAgeVal = parseInt(document.getElementById('loanPayoffAge').value)||0;
+
+  const ryudoIds = ['bsGenkin','bsFutsu','bsTeiki','bsKabu','bsSaiken','bsToshin','bsSonotaToshi'];
+  const ryudoShisanMan = ryudoIds.reduce((s,id)=> s + (parseFloat(document.getElementById(id).value)||0), 0);
+
+  const incomeIdx = getIncomeQuintileIndex();
+
+  const taishokuAge = parseInt(document.getElementById('taishokuAge').value)||65;
+  const nenkinMitoshiMan = parseFloat(document.getElementById('nenkinMitoshiMan').value)||0;
+  const haigushaNenkinAge = hasHaigusha ? (parseInt(document.getElementById('haigushaNenkinAge').value)||65) : null;
+  const haigushaNenkinMan = hasHaigusha ? (parseFloat(document.getElementById('haigushaNenkinMan').value)||0) : 0;
+  const taishokuAge2 = parseInt(document.getElementById('taishokuAge2').value)||65;
+  const taishokukinMan = parseFloat(document.getElementById('taishokukinMan').value)||0;
+  const haigushaTaishokuAge = hasHaigusha ? (parseInt(document.getElementById('haigushaTaishokuAge').value)||65) : null;
+  const haigushaTaishokukinMan = hasHaigusha ? (parseFloat(document.getElementById('haigushaTaishokukinMan').value)||0) : 0;
+
+  const customEvents = [...customEventList.querySelectorAll('.ce-item')].map(el=>({
+    yearOffset: parseInt(el.querySelector('.ce-year').value),
+    label: el.querySelector('.ce-label').value.trim(),
+    amountMan: parseFloat(el.querySelector('.ce-amount').value)||0,
+  })).filter(e=>e.label);
+
+  const recurringEvents = [...recurringEventList.querySelectorAll('.re-item')].map(el=>({
+    startAge: parseInt(el.querySelector('.re-start').value)||0,
+    type: el.querySelector('.re-type').value,
+    label: el.querySelector('.re-label').value.trim(),
+    amountMan: parseFloat(el.querySelector('.re-amount').value)||0,
+  })).filter(e=>e.label);
+
+  return {
+    honninAge, hasHaigusha, haigushaAgeNow, haigushaNenshuMan, shahokenType, sonota, idecoMan,
+    hasKyuyo, kyuyoNenshuMan, hasJigyo, jigyoShotokuMan, hasZassho, zasshoShotokuMan,
+    dependents,
+    jukyo, yachinMan, jutakuLoanMan, kasaiHokenEn, carOn, carLoanMan, carTaxMan, carHokenEn,
+    seimeiHokenMan, iryoHokenEn, jugyoryoNenMan, loanPayoffAgeVal,
+    ryudoShisanMan, incomeIdx,
+    taishokuAge, nenkinMitoshiMan, haigushaNenkinAge, haigushaNenkinMan,
+    taishokuAge2, taishokukinMan, haigushaTaishokuAge, haigushaTaishokukinMan,
+    customEvents, recurringEvents,
+  };
+}
+
+function computeCashFlow30(inp){
+  const thisYear = new Date().getFullYear();
+  const rows = [];
+  let savings = inp.ryudoShisanMan;
+
+  for(let offset=1; offset<=30; offset++){
+    const year = thisYear + offset;
+    const honninAgeY = inp.honninAge + offset;
+    const haigushaAgeY = inp.hasHaigusha ? inp.haigushaAgeNow + offset : null;
+
+    const stillActive = honninAgeY < inp.taishokuAge2;
+    const stillWorking = inp.hasKyuyo && stillActive;
+    const pensionStarted = honninAgeY >= inp.taishokuAge && inp.nenkinMitoshiMan>0;
+    const shahokenTypeY = honninAgeY >= inp.taishokuAge2 ? 'kokuho' : inp.shahokenType;
+    const depsY = inp.dependents
+      .filter(d=> d.kubun==='kodomo' ? (d.age+offset) < d.independAge : true)
+      .map(d=> ({...d, age: d.age+offset}));
+
+    const r = calcAll({
+      kyuyo: { has: stillWorking, nenshuMan: inp.kyuyoNenshuMan },
+      jigyo: { has: inp.hasJigyo && stillActive, shotokuMan: inp.jigyoShotokuMan },
+      zassho:{ has: inp.hasZassho && stillActive, shotokuMan: inp.zasshoShotokuMan },
+      nenkin:{ has: pensionStarted, nenkinMan: inp.nenkinMitoshiMan },
+      shahokenType: shahokenTypeY,
+      sonota: inp.sonota,
+      age: honninAgeY,
+      haigushaNenshuMan: (inp.hasHaigusha && !(haigushaAgeY>=inp.haigushaNenkinAge && inp.haigushaNenkinMan>0)) ? inp.haigushaNenshuMan : null,
+      dependents: depsY,
+      idecoMan: stillActive ? inp.idecoMan : 0,
+    });
+    const honninTedoriMan = r.手取り;
+
+    // 配偶者：年金開始前は給与所得者として税・社会保険料を差し引いた手取りを計算し、開始後は年金の手取りに切り替える
+    let haigushaTedoriMan = 0;
+    if(inp.hasHaigusha){
+      const haigushaPensionStarted = haigushaAgeY>=inp.haigushaNenkinAge && inp.haigushaNenkinMan>0;
+      haigushaTedoriMan = haigushaPensionStarted
+        ? calcNenkinTedori(inp.haigushaNenkinMan, haigushaAgeY)
+        : calcHaigushaKyuyoTedori(inp.haigushaNenshuMan, haigushaAgeY);
+    }
+
+    let taishokukinThisYear = 0;
+    if(honninAgeY===inp.taishokuAge2) taishokukinThisYear += inp.taishokukinMan;
+    if(inp.hasHaigusha && haigushaAgeY===inp.haigushaTaishokuAge) taishokukinThisYear += inp.haigushaTaishokukinMan;
+
+    let recurringIncomeMan=0, recurringExpenseMan=0;
+    inp.recurringEvents.forEach(e=>{
+      if(honninAgeY>=e.startAge){
+        if(e.type==='income') recurringIncomeMan += e.amountMan; else recurringExpenseMan += e.amountMan;
+      }
+    });
+
+    const customExpenseMan = inp.customEvents.filter(e=>e.yearOffset===offset).reduce((s,e)=> s+e.amountMan, 0);
+
+    let standardEventMan = 0;
+    STANDARD_EVENTS.forEach(ev=>{
+      if(ev.who==='kodomo' && ev.amountPublic!=null){
+        depsY.forEach(d=>{ if(d.kubun==='kodomo' && ev.ages.includes(d.age)) standardEventMan += ev.amountPublic; });
+      }
+    });
+
+    const kodomoStillHome = depsY.filter(d=>d.kubun==='kodomo').length;
+    let houseCount = 1 + (inp.hasHaigusha?1:0) + kodomoStillHome;
+    houseCount = Math.max(1, Math.min(6, houseCount));
+    const houseIdx = houseCount - 1;
+    let groupBMonthlyEn = 0;
+    Object.keys(PARAMS_TOUKEI.グループB).forEach(cat=>{
+      const p = PARAMS_TOUKEI.グループB[cat];
+      groupBMonthlyEn += (p.house[houseIdx] * p.income[inp.incomeIdx]) / p.base;
+    });
+    const groupBYearMan = enToMan(groupBMonthlyEn*12);
+
+    const loanActive = inp.jukyo==='loan' && (inp.loanPayoffAgeVal<=0 || honninAgeY < inp.loanPayoffAgeVal);
+    const jukyoMan = inp.jukyo==='chintai' ? inp.yachinMan : (loanActive ? inp.jutakuLoanMan : 0);
+    const carMan = inp.carOn ? (inp.carLoanMan + inp.carTaxMan + carHokenEnToMan(inp.carHokenEn)) : 0;
+    const groupAMonthlyMan = jukyoMan + enToManSimple(inp.kasaiHokenEn) + carMan + inp.seimeiHokenMan + enToManSimple(inp.iryoHokenEn);
+    const groupAYearMan = groupAMonthlyMan*12 + inp.jugyoryoNenMan;
+
+    const shunyuMan = honninTedoriMan + haigushaTedoriMan + taishokukinThisYear + recurringIncomeMan;
+    const shishutsuMan = groupAYearMan + groupBYearMan + customExpenseMan + recurringExpenseMan + standardEventMan;
+    const shushiMan = shunyuMan - shishutsuMan;
+    savings += shushiMan;
+
+    rows.push({ year, offset, honninAgeY, haigushaAgeY, shunyuMan, shishutsuMan, shushiMan, savings });
+  }
+  return rows;
+}
+function enToManSimple(en){ return en/10000; }
+function carHokenEnToMan(en){ return en/10000; }
+
+document.getElementById('calcCashflowBtn').addEventListener('click', ()=>{
+  const inp = collectAllInputs();
+  const rows = computeCashFlow30(inp);
+
+  const theadCols = ['年','経過','本人年齢', inp.hasHaigusha?'配偶者年齢':null, '年間収入','年間支出','年間収支','貯蓄残高'].filter(Boolean).map(c=>`<th>${c}</th>`).join('');
+  const tbodyRows = rows.map(r=>{
+    const zone = zoneOf(r.offset);
+    const zoneCls = zone==='mid' ? 'le-zone-mid' : (zone==='long' ? 'le-zone-long' : '');
+    const shushiColor = r.shushiMan<0 ? 'color:#B5432E;' : '';
+    const cells = [
+      `<td class="le-year-cell">${r.year}</td>`,
+      `<td>${r.offset}年後</td>`,
+      `<td>${r.honninAgeY}歳</td>`,
+      inp.hasHaigusha ? `<td>${r.haigushaAgeY}歳</td>` : null,
+      `<td class="le-amount">${r.shunyuMan.toFixed(1)}万円</td>`,
+      `<td class="le-amount">${r.shishutsuMan.toFixed(1)}万円</td>`,
+      `<td class="le-amount" style="${shushiColor}">${r.shushiMan>=0?'+':''}${r.shushiMan.toFixed(1)}万円</td>`,
+      `<td class="le-amount"><strong>${r.savings.toFixed(1)}万円</strong></td>`,
+    ].filter(Boolean).join('');
+    return `<tr class="${zoneCls}">${cells}</tr>`;
+  }).join('');
+
+  document.getElementById('cashflowResult').innerHTML = `
+    <table class="le-table"><thead><tr>${theadCols}</tr></thead><tbody>${tbodyRows}</tbody></table>
+    <div class="subtotal-note" style="margin-top:10px;">貯蓄残高がマイナスに転じる年に注意してください。白＝短期（〜5年）／クリーム＝中期（6〜15年）／グレー＝長期（16〜30年、不確実性が大きい参考値）。</div>
+  `;
+});
+
+// ===== 顧客データの保存・読み込み =====
+
+function serializeState(){
+  const state = { savedAt: new Date().toISOString(), version: 1, fields: {}, toggles: {}, lists: {} };
+
+  document.querySelectorAll('.wrap input[id], .wrap select[id]').forEach(el=>{
+    if(el.closest('.dep-list, #customEventList, #recurringEventList, #groupBRows, #jugyoryoList')) return;
+    if(el.type==='file') return;
+    state.fields[el.id] = el.value;
+  });
+
+  document.querySelectorAll('.toggle[id]').forEach(t=>{
+    const active = t.querySelector('.active');
+    if(active) state.toggles[t.id] = active.dataset.v;
+  });
+
+  state.lists.kodomo = [...kodomoList.children].map(el=>({
+    age: el.querySelector('.dep-age').value,
+    doukyo: el.querySelector('.dep-doukyo').value,
+    independAge: el.querySelector('.dep-independ').value,
+  }));
+  state.lists.oya = [...oyaList.children].map(el=>({
+    age: el.querySelector('.dep-age').value,
+    doukyo: el.querySelector('.dep-doukyo').value,
+  }));
+  state.lists.customEvents = [...customEventList.querySelectorAll('.ce-item')].map(el=>({
+    year: el.querySelector('.ce-year').value,
+    label: el.querySelector('.ce-label').value,
+    amount: el.querySelector('.ce-amount').value,
+  }));
+  state.lists.recurringEvents = [...recurringEventList.querySelectorAll('.re-item')].map(el=>({
+    start: el.querySelector('.re-start').value,
+    type: el.querySelector('.re-type').value,
+    label: el.querySelector('.re-label').value,
+    amount: el.querySelector('.re-amount').value,
+  }));
+  state.lists.jugyoryo = [...document.querySelectorAll('.jugyoryo-input')].map(inp=>inp.value);
+  state.lists.groupB = [...document.querySelectorAll('.groupb-input')].map(inp=>({
+    cat: inp.dataset.cat, value: inp.value, touched: inp.classList.contains('edited'),
+  }));
+
+  return state;
+}
+
+function restoreState(state){
+  if(!state) return;
+
+  Object.entries(state.fields||{}).forEach(([id,val])=>{
+    const el = document.getElementById(id);
+    if(el) el.value = val;
+  });
+
+  Object.entries(state.toggles||{}).forEach(([toggleId,dataV])=>{
+    const toggle = document.getElementById(toggleId);
+    if(!toggle) return;
+    const btn = [...toggle.children].find(b=>b.dataset.v===dataV);
+    if(btn) btn.click();
+  });
+
+  kodomoList.innerHTML = '';
+  (state.lists?.kodomo||[]).forEach(d=> addDepRow(kodomoList, 'kodomo', parseInt(d.age)||0, d.doukyo==='yes', parseInt(d.independAge)||18));
+  oyaList.innerHTML = '';
+  (state.lists?.oya||[]).forEach(d=> addDepRow(oyaList, 'oya', parseInt(d.age)||0, d.doukyo==='yes'));
+
+  customEventList.innerHTML = '';
+  (state.lists?.customEvents||[]).forEach(e=> addCustomEventRow(parseInt(e.year)||1, e.label||'', parseFloat(e.amount)||0));
+
+  recurringEventList.innerHTML = '';
+  (state.lists?.recurringEvents||[]).forEach(e=> addRecurringEventRow(parseInt(e.start)||60, e.type||'income', e.label||'', parseFloat(e.amount)||0));
+
+  syncJugyoryoRows();
+  const jugyoryoInputs = document.querySelectorAll('.jugyoryo-input');
+  (state.lists?.jugyoryo||[]).forEach((v,i)=>{ if(jugyoryoInputs[i]) jugyoryoInputs[i].value = v; });
+
+  if(state.lists?.groupB?.length){
+    groupBTouched = true;
+    const groupBRowsEl = document.getElementById('groupBRows');
+    groupBRowsEl.innerHTML = state.lists.groupB.map(g=>{
+      const id = 'gb_'+g.cat.replace(/[^a-zA-Z0-9]/g,'');
+      const cls = g.touched ? 'edited' : 'preset';
+      return `<div class="row">
+        <label>${g.cat}</label>
+        <div class="field"><input type="number" class="${cls} groupb-input" id="${id}" data-cat="${g.cat}" value="${g.value}" min="0"><span class="unit">円/月</span></div>
+      </div>`;
+    }).join('');
+    groupBRowsEl.querySelectorAll('input.preset').forEach(inp=>{
+      inp.addEventListener('input', ()=>{ inp.classList.remove('preset'); inp.classList.add('edited'); });
+    });
+  }
+
+  document.getElementById('clientStatus').textContent = `読み込み完了：${state.fields?.clientName || '（顧客名未設定）'}（保存日時：${state.savedAt ? new Date(state.savedAt).toLocaleString('ja-JP') : '不明'}）`;
+}
+
+document.getElementById('saveClientBtn').addEventListener('click', ()=>{
+  const state = serializeState();
+  const name = (document.getElementById('clientName').value || '顧客').trim();
+  const dateStr = new Date().toISOString().slice(0,10);
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type:'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${name}_${dateStr}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  document.getElementById('clientStatus').textContent = `保存しました：${name}_${dateStr}.json`;
+});
+
+document.getElementById('loadClientBtn').addEventListener('click', ()=>{
+  document.getElementById('loadClientFile').click();
+});
+document.getElementById('loadClientFile').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    try{
+      const state = JSON.parse(reader.result);
+      restoreState(state);
+    }catch(err){
+      document.getElementById('clientStatus').textContent = '読み込みに失敗しました。ファイルの形式をご確認ください。';
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+});
+
+// 自動保存は事故防止用の補助として提供するが、複数の顧客と連続で面談する場合に
+// 前の顧客の入力内容が次の顧客との面談中に画面へ表示されるおそれがあるため、
+// 復元の確認ダイアログでは内容を伏せ、保存日時のみを表示する。
+const AUTOSAVE_KEY = 'tedori-shindan-autosave';
+let autosaveTimer = null;
+function scheduleAutosave(){
+  clearTimeout(autosaveTimer);
+  autosaveTimer = setTimeout(()=>{
+    try{ localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(serializeState())); }catch(err){}
+  }, 1500);
+}
+document.querySelector('.wrap').addEventListener('input', scheduleAutosave);
+document.querySelector('.wrap').addEventListener('click', (e)=>{ if(e.target.closest('.toggle, .del, .add-btn')) scheduleAutosave(); });
+
+(function(){
+  try{
+    const saved = localStorage.getItem(AUTOSAVE_KEY);
+    if(saved){
+      const state = JSON.parse(saved);
+      const when = state.savedAt ? new Date(state.savedAt).toLocaleString('ja-JP') : '不明';
+      if(confirm(`前回の入力途中のデータが見つかりました（${when}保存）。復元しますか？\n\n顧客名は表示していません（複数の方と続けて面談される際の誤表示を防ぐためです）。\n\n「キャンセル」を押すと空の状態から始められます。`)){
+        restoreState(state);
+      } else {
+        try{ localStorage.removeItem(AUTOSAVE_KEY); }catch(err){}
+      }
+    }
+  }catch(err){}
+})();
+</script>
+</body>
+</html>
